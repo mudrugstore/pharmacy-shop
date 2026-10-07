@@ -16,6 +16,8 @@ def init_pool(database_url):
         # - max_size เล็ก (แต่ละ worker ถือ pool แยก คูณจำนวน worker แล้วไม่ควรชน limit)
         # - max_idle คืน connection ที่ว่างนานเพื่อไม่ให้ค้างกิน connection ของ Supabase
         # - max_lifetime รีไซเคิล connection กัน connection ตายจากฝั่ง pooler
+        # check=check_connection: ทดสอบ connection ก่อนส่งให้ใช้ ถ้าตาย/SSL เพี้ยน
+        #   (เช่น error 'bad record mac' จาก Supabase pooler) จะทิ้งแล้วสร้างใหม่อัตโนมัติ
         _pool = ConnectionPool(
             conninfo=database_url,
             min_size=1,
@@ -23,6 +25,7 @@ def init_pool(database_url):
             max_idle=60,
             max_lifetime=1800,
             timeout=30,
+            check=ConnectionPool.check_connection,
             open=True,
             kwargs={"row_factory": dict_row},
         )
@@ -45,15 +48,28 @@ def query(sql, params=None, fetchone=False, fetchall=False, commit=False):
     - fetchall: คืนทุกแถว (list ของ dict)
     - commit: psycopg v3 จะ commit อัตโนมัติเมื่อออกจาก context (ไม่มี error)
       พารามิเตอร์ commit คงไว้เพื่อความชัดเจนของเจตนาเท่านั้น
+
+    มี retry 1 ครั้งถ้าเจอ connection error (เช่น Supabase pooler ตัด connection
+    ทำให้เกิด 'bad record mac' หรือ connection ปิดกะทันหัน) โดย pool จะหยิบ
+    connection ใหม่ที่ผ่านการ check แล้วมาให้
     """
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql, params or ())
-            if fetchone:
-                return cur.fetchone()
-            if fetchall:
-                return cur.fetchall()
-            return None
+    import psycopg
+
+    attempts = 2
+    for i in range(attempts):
+        try:
+            with get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(sql, params or ())
+                    if fetchone:
+                        return cur.fetchone()
+                    if fetchall:
+                        return cur.fetchall()
+                    return None
+        except (psycopg.OperationalError, psycopg.InterfaceError):
+            if i == attempts - 1:
+                raise
+            # ลองใหม่อีกครั้ง pool จะ check แล้วหยิบ connection ที่ใช้งานได้มาให้
 
 
 def init_schema():

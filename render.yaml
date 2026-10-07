@@ -6,8 +6,10 @@ services:
     runtime: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    # 2 workers พอสำหรับ ~200 ผู้ใช้บนแพลนฟรี, timeout 120s กัน request ถูกตัดตอน Supabase cold start
-    startCommand: "gunicorn wsgi:app --workers 2 --threads 4 --timeout 120 --access-logfile - --error-logfile -"
+    # 1 worker + หลาย threads: ปลอดภัยกับ connection pool (เลี่ยง SSL bad record mac
+    # จากการแชร์ connection ข้าม process), เพียงพอสำหรับ ~200 ผู้ใช้ที่ทยอยเข้า
+    # timeout 120s กัน request ถูกตัดตอน Supabase cold start
+    startCommand: "gunicorn wsgi:app --workers 1 --threads 8 --timeout 120 --access-logfile - --error-logfile -"
     envVars:
       - key: SECRET_KEY
         generateValue: true          # Render สุ่มค่าให้อัตโนมัติ
