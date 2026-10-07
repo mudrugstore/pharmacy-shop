@@ -68,6 +68,7 @@
             {% if current_user and current_user.is_admin %}
                 <a href="{{ url_for('admin.dashboard') }}">แผงแอดมิน</a>
             {% endif %}
+            <a href="{{ url_for('shop.help_page') }}">ช่วยเหลือ</a>
             <span class="spacer"></span>
             <span class="muted">โทร {{ store_phone }}</span>
         </div>

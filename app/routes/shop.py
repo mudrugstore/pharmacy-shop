@@ -282,3 +282,9 @@ def order_detail(order_id):
         fetchall=True,
     )
     return render_template("shop/order_detail.html", order=order, items=items)
+
+
+@bp.route("/help")
+def help_page():
+    """หน้าคู่มือการใช้งาน แสดงเนื้อหาตาม role ของผู้ใช้"""
+    return render_template("shop/help.html")
