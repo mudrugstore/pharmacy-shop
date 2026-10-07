@@ -43,10 +43,13 @@ def _upload(file_storage, max_size):
     filename = f"{uuid.uuid4().hex}.jpg"
     upload_endpoint = f"{supabase_url}/storage/v1/object/{bucket}/{filename}"
 
+    # ส่งทั้ง Authorization และ apikey เพื่อรองรับ key ทั้งแบบเดิม (service_role JWT)
+    # และแบบใหม่ของ Supabase (sb_secret_...) ซึ่งบาง endpoint ต้องการ header apikey ด้วย
     resp = requests.post(
         upload_endpoint,
         headers={
             "Authorization": f"Bearer {service_key}",
+            "apikey": service_key,
             "Content-Type": "image/jpeg",
             "x-upsert": "true",
         },
