@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}สินค้าพรีออเดอร์ · {{ store_name }}{% endblock %}
+{% block content %}
+{% include "_banner.html" %}
+
+<h1 class="page-title">สินค้าพรีออเดอร์ (สั่งจอง)</h1>
+<div class="notice">
+    สินค้าในหมวดนี้เปิดให้ <strong>สั่งจองล่วงหน้า</strong><br>
+    {{ preorder_message }}
+</div>
+
+{% if products %}
+<div class="grid">
+    {% for p in products %}
+    <div class="card">
+        <span class="badge-corner badge-preorder">พรีออเดอร์</span>
+        {% if p.image_url %}
+            <img src="{{ p.image_url }}" alt="{{ p.name }}" class="card-img">
+        {% else %}
+            <div class="card-img-placeholder">ไม่มีรูป</div>
+        {% endif %}
+        <div class="card-body">
+            <div class="card-title">{{ p.name }}</div>
+            <div class="card-price"><span class="cur">฿</span>{{ "%.2f"|format(p.price) }}</div>
+            {% if current_user and not current_user.is_admin %}
+            <form method="post" action="{{ url_for('preorder.make_request', product_id=p.id) }}" class="row-actions" style="margin-top:6px;">
+                <div class="qty-stepper">
+                    <button type="button" data-step="-1">&minus;</button>
+                    <input type="number" name="quantity" value="1" min="1">
+                    <button type="button" data-step="1">+</button>
+                </div>
+                <button type="submit" class="btn btn-small">สั่งจอง</button>
+            </form>
+            {% elif not current_user %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-small" style="margin-top:6px;">เข้าสู่ระบบเพื่อสั่งจอง</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="muted">ขณะนี้ยังไม่มีสินค้าเปิดให้พรีออเดอร์</p>
+{% endif %}
+{% endblock %}

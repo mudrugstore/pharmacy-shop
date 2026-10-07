@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}จัดการผู้ใช้ · {{ store_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">จัดการผู้ใช้</h1>
+{% include "admin/_nav.html" %}
+
+<div class="notice">
+    กรณีผู้ใช้ลืมรหัสผ่าน กด "รีเซ็ตรหัส" เพื่อปลดล็อก
+    จากนั้นผู้ใช้จะต้องตั้งรหัสผ่านใหม่เองเมื่อเข้าสู่ระบบครั้งถัดไป
+</div>
+
+{% if users %}
+<div class="table-wrap responsive-cards">
+    <table>
+        <thead><tr><th>ชื่อ</th><th>เบอร์โทร</th><th>วันที่สมัคร</th><th>สถานะ</th><th></th></tr></thead>
+        <tbody>
+        {% for u in users %}
+            <tr>
+                <td data-label="ชื่อ">{{ u.name }}</td>
+                <td data-label="เบอร์โทร">{{ u.phone }}</td>
+                <td data-label="วันที่สมัคร">{{ u.created_at|thaidt('%d/%m/%Y') }}</td>
+                <td data-label="สถานะ">
+                    {% if u.must_reset_password %}
+                        <span class="stock-out">รอตั้งรหัสใหม่</span>
+                    {% else %}
+                        <span class="stock-ok">ปกติ</span>
+                    {% endif %}
+                </td>
+                <td data-label="" class="row-actions">
+                    <form method="post" action="{{ url_for('admin.reset_user_password', user_id=u.id) }}" class="inline-form"
+                          onsubmit="return confirm('รีเซ็ตรหัสผ่านของ {{ u.name }}?');">
+                        <button type="submit" class="btn-small">รีเซ็ตรหัส</button>
+                    </form>
+                    <form method="post" action="{{ url_for('admin.delete_user', user_id=u.id) }}" class="inline-form"
+                          onsubmit="return confirm('ลบผู้ใช้ {{ u.name }}? การกระทำนี้ย้อนกลับไม่ได้');">
+                        <button type="submit" class="btn-small btn-danger">ลบ</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="muted">ยังไม่มีผู้ใช้</p>
+{% endif %}
+{% endblock %}

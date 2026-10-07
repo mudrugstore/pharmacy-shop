@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ store_name }}{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* สีธีมที่แอดมินตั้งค่าได้เอง */
+        :root {
+            --primary: {{ theme_color }};
+            --primary-dark: color-mix(in srgb, {{ theme_color }} 82%, black);
+            --primary-light: color-mix(in srgb, {{ theme_color }} 10%, white);
+        }
+    </style>
+</head>
+<body>
+<!-- แถบความคืบหน้าด้านบน + overlay spinner ตอนเปลี่ยนหน้า -->
+<div id="pageProgress" class="page-progress"></div>
+<div id="pageLoader" class="page-loader" aria-hidden="true">
+    <div class="loader-box">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">กำลังโหลด...</div>
+    </div>
+</div>
+<header>
+    <div class="topbar">
+        <div class="topbar-inner">
+            <a href="{{ url_for('shop.index') }}" class="brand">
+                {% if logo_url %}
+                    <img src="{{ logo_url }}" alt="{{ store_name }}" class="brand-logo-img">
+                {% else %}
+                    <span class="brand-logo">+</span>
+                {% endif %}
+                {{ store_name }}
+            </a>
+            <form class="search-bar" method="get" action="{{ url_for('shop.index') }}">
+                <input type="text" name="q" value="{{ request.args.get('q', '') }}" placeholder="ค้นหาสินค้าและยา...">
+                <button type="submit">ค้นหา</button>
+            </form>
+            <div class="top-actions">
+                {% if current_user and not current_user.is_admin %}
+                    <a href="{{ url_for('shop.cart') }}" class="cart-link" title="ตะกร้า">
+                        &#128722;{% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
+                    </a>
+                {% endif %}
+                {% if current_user %}
+                    <span class="top-user">{{ current_user.name }}</span>
+                    <a href="{{ url_for('auth.logout') }}">ออกจากระบบ</a>
+                {% else %}
+                    <a href="{{ url_for('auth.register') }}">สมัครสมาชิก</a>
+                    <a href="{{ url_for('auth.login') }}">เข้าสู่ระบบ</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="subnav">
+        <div class="subnav-inner">
+            <a href="{{ url_for('shop.index') }}">สินค้าทั้งหมด</a>
+            <a href="{{ url_for('preorder.index') }}">พรีออเดอร์</a>
+            {% if current_user and not current_user.is_admin %}
+                <a href="{{ url_for('shop.orders') }}">คำสั่งซื้อของฉัน</a>
+                <a href="{{ url_for('preorder.my_requests') }}">พรีออเดอร์ของฉัน</a>
+            {% endif %}
+            {% if current_user and current_user.is_admin %}
+                <a href="{{ url_for('admin.dashboard') }}">แผงแอดมิน</a>
+            {% endif %}
+            <span class="spacer"></span>
+            <span class="muted">โทร {{ store_phone }}</span>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+    <p>{{ store_name }} · โทร {{ store_phone }}</p>
+    {% if store_address %}<p>{{ store_address }}</p>{% endif %}
+    {% if store_hours %}<p>เวลาทำการ: {{ store_hours }}</p>{% endif %}
+</footer>
+
+<script>
+// ปุ่ม +/- สำหรับช่องกรอกจำนวน (qty-stepper)
+document.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-step]");
+    if (!btn) return;
+    var wrap = btn.closest(".qty-stepper");
+    var input = wrap.querySelector("input[type=number]");
+    var step = parseInt(btn.getAttribute("data-step"), 10);
+    var min = input.min !== "" ? parseInt(input.min, 10) : 1;
+    var max = input.max !== "" ? parseInt(input.max, 10) : Infinity;
+    var val = (parseInt(input.value, 10) || min) + step;
+    if (val < min) val = min;
+    if (val > max) val = max;
+    input.value = val;
+});
+
+// แบนเนอร์สไลด์
+(function () {
+    var slider = document.getElementById("bannerSlider");
+    if (!slider) return;
+    var track = slider.querySelector(".banner-track");
+    var slides = slider.querySelectorAll(".banner-slide");
+    var dots = slider.querySelectorAll(".banner-dot");
+    if (slides.length < 2) return;
+    var idx = 0, timer;
+
+    function go(i) {
+        idx = (i + slides.length) % slides.length;
+        track.style.transform = "translateX(-" + (idx * 100) + "%)";
+        dots.forEach(function (d, k) { d.classList.toggle("active", k === idx); });
+    }
+    function next() { go(idx + 1); }
+    function start() { timer = setInterval(next, 4000); }
+    function stop() { clearInterval(timer); }
+
+    slider.querySelectorAll(".banner-nav").forEach(function (b) {
+        b.addEventListener("click", function () { stop(); go(idx + parseInt(b.dataset.dir, 10)); start(); });
+    });
+    dots.forEach(function (d) {
+        d.addEventListener("click", function () { stop(); go(parseInt(d.dataset.idx, 10)); start(); });
+    });
+    slider.addEventListener("mouseenter", stop);
+    slider.addEventListener("mouseleave", start);
+    start();
+})();
+
+// Loading indicator ตอนเปลี่ยนหน้า (ช่วยตอน server โหลดช้า เช่น cold start)
+(function () {
+    var loader = document.getElementById("pageLoader");
+    var progress = document.getElementById("pageProgress");
+    var shown = false;
+
+    function showLoader() {
+        if (shown) return;
+        shown = true;
+        progress.classList.add("active");
+        // หน่วงเล็กน้อยก่อนขึ้น overlay เต็มจอ ถ้าหน้าโหลดเร็วจะไม่ทันเห็น (ไม่กะพริบรก)
+        loader._t = setTimeout(function () { loader.classList.add("show"); }, 400);
+    }
+    function hideLoader() {
+        shown = false;
+        clearTimeout(loader._t);
+        loader.classList.remove("show");
+        progress.classList.remove("active");
+    }
+
+    // คลิกลิงก์ภายในเว็บ (ไม่ใช่ลิงก์นอก, ไม่ใช่ _blank, ไม่ใช่ anchor #)
+    document.addEventListener("click", function (e) {
+        var a = e.target.closest("a");
+        if (!a) return;
+        var href = a.getAttribute("href") || "";
+        if (!href || href.charAt(0) === "#") return;
+        if (a.target === "_blank" || a.hasAttribute("download")) return;
+        if (e.ctrlKey || e.metaKey || e.shiftKey) return;  // เปิดแท็บใหม่
+        // ลิงก์ภายในโดเมนเดียวกันเท่านั้น
+        if (a.host && a.host !== window.location.host) return;
+        showLoader();
+    });
+
+    // submit form (ค้นหา/สั่งซื้อ/บันทึก)
+    document.addEventListener("submit", function () { showLoader(); });
+
+    // ซ่อน loader เมื่อหน้าใหม่โหลดเสร็จ หรือกดปุ่ม back (bfcache)
+    window.addEventListener("pageshow", hideLoader);
+    window.addEventListener("beforeunload", function () {});
+})();
+</script>
+</body>
+</html>

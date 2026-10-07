@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}คำสั่งซื้อ #{{ order.id }} · {{ store_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">คำสั่งซื้อ #{{ order.id }}</h1>
+{% include "admin/_nav.html" %}
+
+<div class="table-wrap" style="margin-bottom:16px;">
+    <table>
+        <tbody>
+            <tr><th style="width:160px;">ลูกค้า</th><td>{{ order.customer_name }}</td></tr>
+            <tr><th>เบอร์โทร</th><td>{{ order.phone }}</td></tr>
+            <tr><th>วันที่สั่ง</th><td>{{ order.created_at|thaidt }}</td></tr>
+            <tr><th>หมายเหตุ</th><td>{{ order.note or '-' }}</td></tr>
+            <tr><th>ยอดรวม</th><td>{{ "%.2f"|format(order.total) }} บาท</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<h2 class="section-title">รายการสินค้า</h2>
+<div class="table-wrap">
+    <table>
+        <thead><tr><th>สินค้า</th><th>ราคา/ชิ้น</th><th>จำนวน</th><th class="text-right">รวม</th></tr></thead>
+        <tbody>
+        {% for it in items %}
+            <tr>
+                <td>{{ it.product_name }}</td>
+                <td>{{ "%.2f"|format(it.unit_price) }}</td>
+                <td>{{ it.quantity }}</td>
+                <td class="text-right">{{ "%.2f"|format(it.unit_price * it.quantity) }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h2 class="section-title">อัปเดตสถานะ</h2>
+<form method="post" class="row-actions">
+    <select name="status">
+        {% for s in ['รอดำเนินการ', 'กำลังเตรียมของ', 'พร้อมรับ/จัดส่ง', 'ชำระเงินแล้ว', 'เสร็จสิ้น', 'ยกเลิก'] %}
+            <option value="{{ s }}" {% if order.status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="btn">บันทึกสถานะ</button>
+</form>
+<a href="{{ url_for('admin.orders') }}" class="muted" style="margin-top:12px;display:inline-block;">&larr; กลับไปรายการคำสั่งซื้อ</a>
+{% endblock %}

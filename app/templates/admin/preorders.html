@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}พรีออเดอร์ · {{ store_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">รายการพรีออเดอร์</h1>
+{% include "admin/_nav.html" %}
+
+{% if preorders %}
+<div class="table-wrap responsive-cards">
+    <table>
+        <thead><tr><th>ลูกค้า</th><th>เบอร์โทร</th><th>สินค้า</th><th>จำนวน</th><th>วันที่</th><th>สถานะ</th></tr></thead>
+        <tbody>
+        {% for r in preorders %}
+            <tr>
+                <td data-label="ลูกค้า">{{ r.customer_name }}</td>
+                <td data-label="เบอร์โทร"><strong>{{ r.phone }}</strong></td>
+                <td data-label="สินค้า">{{ r.product_name }}</td>
+                <td data-label="จำนวน">{{ r.quantity }}</td>
+                <td data-label="วันที่">{{ r.created_at|thaidt }}</td>
+                <td data-label="สถานะ">
+                    <form method="post" action="{{ url_for('admin.preorder_status', request_id=r.id) }}" class="row-actions">
+                        <select name="status">
+                            {% for s in ['รอติดต่อกลับ', 'ติดต่อแล้ว', 'ยืนยันแล้ว', 'ยกเลิก'] %}
+                                <option value="{{ s }}" {% if r.status == s %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn-small btn-secondary">บันทึก</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="muted">ยังไม่มีรายการพรีออเดอร์</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}สมัครสมาชิก · {{ store_name }}{% endblock %}
+{% block content %}
+<div class="form-box">
+    <div class="form-logo">{{ store_name }}</div>
+    <h1 class="page-title" style="text-align:center; font-size:1.2rem;">สมัครสมาชิก</h1>
+    <form method="post">
+        <div class="form-group">
+            <label>ชื่อ</label>
+            <input type="text" name="name" value="{{ name or '' }}" required>
+        </div>
+        <div class="form-group">
+            <label>เบอร์โทรศัพท์</label>
+            <input type="tel" name="phone" value="{{ phone or '' }}" placeholder="เช่น 0812345678" required>
+        </div>
+        <div class="form-group">
+            <label>รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
+            <input type="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <label>ยืนยันรหัสผ่าน</label>
+            <input type="password" name="confirm" required>
+        </div>
+        <button type="submit" class="btn btn-block">สมัครสมาชิก</button>
+    </form>
+    <p class="muted" style="margin-top:14px; text-align:center;">
+        มีบัญชีแล้ว? <a href="{{ url_for('auth.login') }}">เข้าสู่ระบบ</a>
+    </p>
+</div>
+{% endblock %}

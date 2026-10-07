@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}คำสั่งซื้อ #{{ order.id }} · {{ store_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">คำสั่งซื้อ #{{ order.id }}</h1>
+
+<div class="notice">
+    {{ checkout_message }} โทร <strong>{{ store_phone }}</strong><br>
+    สถานะปัจจุบัน: <strong>{{ order.status }}</strong>
+</div>
+
+<p class="muted">วันที่สั่ง: {{ order.created_at|thaidt }}</p>
+{% if order.note %}<p>หมายเหตุ: {{ order.note }}</p>{% endif %}
+
+<div class="table-wrap" style="margin-top:12px;">
+    <table>
+        <thead><tr><th>สินค้า</th><th>ราคา/ชิ้น</th><th>จำนวน</th><th class="text-right">รวม</th></tr></thead>
+        <tbody>
+        {% for it in items %}
+            <tr>
+                <td>{{ it.product_name }}</td>
+                <td>{{ "%.2f"|format(it.unit_price) }}</td>
+                <td>{{ it.quantity }}</td>
+                <td class="text-right">{{ "%.2f"|format(it.unit_price * it.quantity) }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot><tr><th colspan="3" class="text-right">ยอดรวม</th><th class="text-right">{{ "%.2f"|format(order.total) }} บาท</th></tr></tfoot>
+    </table>
+</div>
+<a href="{{ url_for('shop.orders') }}" class="muted" style="margin-top:12px;display:inline-block;">&larr; กลับไปรายการคำสั่งซื้อ</a>
+{% endblock %}

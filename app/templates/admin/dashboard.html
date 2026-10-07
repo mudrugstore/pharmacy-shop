@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}แผงแอดมิน · {{ store_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">แผงผู้ดูแลระบบ</h1>
+{% include "admin/_nav.html" %}
+
+<div class="stat-grid">
+    <div class="stat-card"><div class="stat-num">{{ stats.products }}</div><div class="stat-label">สินค้าทั้งหมด</div></div>
+    <div class="stat-card"><div class="stat-num">{{ stats.categories }}</div><div class="stat-label">หมวดหมู่</div></div>
+    <div class="stat-card"><div class="stat-num">{{ stats.orders }}</div><div class="stat-label">คำสั่งซื้อ</div></div>
+    <div class="stat-card"><div class="stat-num">{{ stats.preorders }}</div><div class="stat-label">พรีออเดอร์รอติดต่อ</div></div>
+    <div class="stat-card"><div class="stat-num">{{ stats.users }}</div><div class="stat-label">ผู้ใช้</div></div>
+</div>
+{% endblock %}

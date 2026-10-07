@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}สินค้า · {{ store_name }}{% endblock %}
+{% block content %}
+
+{% include "_banner.html" %}
+
+<div class="cat-strip">
+    <div class="cat-strip-title">หมวดหมู่</div>
+    <div class="cat-items">
+        <a href="{{ url_for('shop.index') }}" class="cat-item {% if not selected_category %}active{% endif %}">
+            <span class="cat-icon">&#128138;</span><span class="cat-label">ทั้งหมด</span>
+        </a>
+        {% for c in categories %}
+        <a href="{{ url_for('shop.index', category=c.id) }}"
+           class="cat-item {% if selected_category == c.id %}active{% endif %}">
+            {% if c.image_url %}
+                <img src="{{ c.image_url }}" alt="{{ c.name }}" class="cat-icon-img">
+            {% else %}
+                <span class="cat-icon">&#128137;</span>
+            {% endif %}
+            <span class="cat-label">{{ c.name }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{% if search_query %}
+<p class="muted" style="margin-bottom:14px;">ผลการค้นหา "<strong>{{ search_query }}</strong>" พบ {{ products|length }} รายการ</p>
+{% else %}
+<div class="section-bar">
+    <span class="section-bar-title">สินค้าแนะนำ</span>
+</div>
+{% endif %}
+
+{% if products %}
+<div class="grid">
+    {% for p in products %}
+    <div class="card">
+        {% if p.stock <= 0 %}
+            <span class="badge-corner badge-soldout">สินค้าหมด</span>
+        {% else %}
+            <span class="badge-corner">ยา</span>
+        {% endif %}
+        <a href="{{ url_for('shop.product_detail', product_id=p.id) }}" class="card-link">
+            <div class="card-img-wrap">
+                {% if p.image_url %}
+                    <img src="{{ p.image_url }}" alt="{{ p.name }}" class="card-img">
+                {% else %}
+                    <div class="card-img-placeholder">&#128138;</div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="card-title">{{ p.name }}</div>
+                <div class="card-price"><span class="cur">฿</span>{{ "%.0f"|format(p.price) if p.price == p.price|round(0) else "%.2f"|format(p.price) }}</div>
+                <div class="card-meta">
+                    <span class="card-cat">{{ p.category_name or 'ทั่วไป' }}</span>
+                    {% if p.stock > 0 %}
+                        <span class="stock-ok">เหลือ {{ p.stock }}</span>
+                    {% else %}
+                        <span class="stock-out">หมด</span>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="muted">
+    {% if search_query %}ไม่พบสินค้าที่ค้นหา{% else %}ยังไม่มีสินค้าในหมวดนี้{% endif %}
+</p>
+{% endif %}
+{% endblock %}

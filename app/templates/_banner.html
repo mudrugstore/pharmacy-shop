@@ -1,0 +1,23 @@
+{# แบนเนอร์สไลด์ ใช้ร่วมกันทั้งหน้าสินค้าและหน้าพรีออเดอร์ ต้องส่งตัวแปร banners เข้ามา #}
+{% if banners %}
+<div class="banner-slider" id="bannerSlider">
+    <div class="banner-track">
+        {% for b in banners %}
+        <div class="banner-slide">
+            {% if b.link_url %}
+                <a href="{{ b.link_url }}"><img src="{{ b.image_url }}" alt="โฆษณา"></a>
+            {% else %}
+                <img src="{{ b.image_url }}" alt="โฆษณา">
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% if banners|length > 1 %}
+    <button type="button" class="banner-nav prev" data-dir="-1">&#10094;</button>
+    <button type="button" class="banner-nav next" data-dir="1">&#10095;</button>
+    <div class="banner-dots">
+        {% for b in banners %}<span class="banner-dot {% if loop.first %}active{% endif %}" data-idx="{{ loop.index0 }}"></span>{% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}

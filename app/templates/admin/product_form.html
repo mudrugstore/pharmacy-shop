@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{% if product %}แก้ไขสินค้า{% else %}เพิ่มสินค้า{% endif %} · {{ store_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">{% if product %}แก้ไขสินค้า{% else %}เพิ่มสินค้าใหม่{% endif %}</h1>
+{% include "admin/_nav.html" %}
+
+<div class="form-box wide">
+    <form method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>ชื่อสินค้า</label>
+            <input type="text" name="name" value="{{ product.name if product else '' }}" required>
+        </div>
+        <div class="form-group">
+            <label>หมวดหมู่</label>
+            <select name="category_id">
+                <option value="">— ไม่ระบุ —</option>
+                {% for c in categories %}
+                    <option value="{{ c.id }}" {% if product and product.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>รายละเอียด</label>
+            <textarea name="description">{{ product.description if product else '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>ราคา (บาท)</label>
+            <input type="number" name="price" step="0.01" min="0" value="{{ '%.2f'|format(product.price) if product else '0.00' }}" required>
+        </div>
+        <div class="form-group">
+            <label>จำนวนสต็อก</label>
+            <input type="number" name="stock" min="0" value="{{ product.stock if product else 0 }}">
+        </div>
+        <div class="form-group checkbox-row">
+            <input type="checkbox" name="is_preorder" id="is_preorder" {% if product and product.is_preorder %}checked{% endif %}>
+            <label for="is_preorder" style="margin:0;">เป็นสินค้าพรีออเดอร์ (สั่งจอง)</label>
+        </div>
+        <div class="form-group">
+            <label>รูปสินค้า {% if product and product.image_url %}(อัปโหลดใหม่เพื่อแทนที่){% endif %}</label>
+            {% if product and product.image_url %}
+                <img src="{{ product.image_url }}" style="width:100px;height:100px;object-fit:cover;border-radius:6px;display:block;margin-bottom:8px;">
+            {% endif %}
+            <input type="file" name="image" accept="image/*">
+        </div>
+        <button type="submit" class="btn">{% if product %}บันทึกการแก้ไข{% else %}เพิ่มสินค้า{% endif %}</button>
+        <a href="{{ url_for('admin.products') }}" class="btn btn-secondary">ยกเลิก</a>
+    </form>
+</div>
+{% endblock %}

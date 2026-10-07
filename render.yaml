@@ -1,0 +1,33 @@
+# การตั้งค่า deploy บน Render (Blueprint)
+# เมื่อ import repo นี้เข้า Render จะอ่านไฟล์นี้อัตโนมัติ
+services:
+  - type: web
+    name: pharmacy-shop
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    # 2 workers พอสำหรับ ~200 ผู้ใช้บนแพลนฟรี, timeout 120s กัน request ถูกตัดตอน Supabase cold start
+    startCommand: "gunicorn wsgi:app --workers 2 --threads 4 --timeout 120 --access-logfile - --error-logfile -"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true          # Render สุ่มค่าให้อัตโนมัติ
+      - key: DATABASE_URL
+        sync: false                  # กรอกเองในหน้า dashboard
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET
+        value: product-images
+      - key: ADMIN_PHONE
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_NAME
+        value: ผู้ดูแลระบบ
+      - key: STORE_NAME
+        sync: false
+      - key: STORE_PHONE
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.12.4

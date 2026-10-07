@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}จัดการสินค้า · {{ store_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">จัดการสินค้า</h1>
+{% include "admin/_nav.html" %}
+
+<a href="{{ url_for('admin.new_product') }}" class="btn" style="margin-bottom:16px;">+ เพิ่มสินค้าใหม่</a>
+
+{% if products %}
+<div class="table-wrap responsive-cards">
+    <table>
+        <thead>
+            <tr><th>รูป</th><th>ชื่อ</th><th>หมวดหมู่</th><th>ราคา</th><th>สต็อก</th><th>ประเภท</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for p in products %}
+            <tr>
+                <td data-label="รูป">
+                    {% if p.image_url %}<img src="{{ p.image_url }}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;">
+                    {% else %}<span class="muted">-</span>{% endif %}
+                </td>
+                <td data-label="ชื่อ">{{ p.name }}</td>
+                <td data-label="หมวดหมู่">{{ p.category_name or '-' }}</td>
+                <td data-label="ราคา">{{ "%.2f"|format(p.price) }}</td>
+                <td data-label="สต็อก">
+                    <form method="post" action="{{ url_for('admin.update_stock', product_id=p.id) }}" class="row-actions">
+                        <input type="number" name="stock" value="{{ p.stock }}" min="0" class="qty-input">
+                        <button type="submit" class="btn-small btn-secondary">ตั้ง</button>
+                    </form>
+                </td>
+                <td data-label="ประเภท">{% if p.is_preorder %}พรีออเดอร์{% else %}ทั่วไป{% endif %}</td>
+                <td data-label="" class="row-actions">
+                    <a href="{{ url_for('admin.edit_product', product_id=p.id) }}" class="btn-small">แก้ไข</a>
+                    <form method="post" action="{{ url_for('admin.delete_product', product_id=p.id) }}" class="inline-form"
+                          onsubmit="return confirm('ลบสินค้านี้?');">
+                        <button type="submit" class="btn-small btn-danger">ลบ</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="muted">ยังไม่มีสินค้า</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} · {{ store_name }}{% endblock %}
+{% block content %}
+<div class="product-detail">
+    <div class="pd-img">
+        {% if product.image_url %}
+            <img src="{{ product.image_url }}" alt="{{ product.name }}">
+        {% else %}
+            <div class="ph">ไม่มีรูป</div>
+        {% endif %}
+    </div>
+    <div class="pd-info">
+        {% if product.category_name %}<div class="muted" style="font-size:.85rem;">{{ product.category_name }}</div>{% endif %}
+        <h1 style="font-size:1.5rem; margin:6px 0;">{{ product.name }}</h1>
+
+        <div class="pd-price">
+            <span class="num"><span style="font-size:1.1rem;">฿</span>{{ "%.2f"|format(product.price) }}</span>
+        </div>
+
+        {% if product.stock > 0 %}
+            <div class="stock-ok" style="margin-bottom:12px;">&#10003; มีสินค้า {{ product.stock }} ชิ้น</div>
+            {% if current_user and not current_user.is_admin %}
+            <form method="post" action="{{ url_for('shop.cart_add', product_id=product.id) }}">
+                <div class="form-group">
+                    <label>จำนวน</label>
+                    <div class="qty-stepper">
+                        <button type="button" data-step="-1">&minus;</button>
+                        <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}">
+                        <button type="button" data-step="1">+</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn" style="min-width:200px;">&#128722; เพิ่มลงตะกร้า</button>
+            </form>
+            {% elif not current_user %}
+                <a href="{{ url_for('auth.login') }}" class="btn" style="min-width:200px;">เข้าสู่ระบบเพื่อสั่งซื้อ</a>
+            {% endif %}
+        {% else %}
+            <div class="stock-out" style="margin-bottom:12px;">สินค้าหมด</div>
+        {% endif %}
+
+        <div style="margin-top:20px;">
+            <div class="section-title" style="margin-top:0;">รายละเอียดสินค้า</div>
+            <p class="muted" style="white-space:pre-line;">{{ product.description or "ไม่มีรายละเอียด" }}</p>
+        </div>
+
+        <a href="{{ url_for('shop.index') }}" class="muted" style="margin-top:16px; display:inline-block;">&larr; กลับไปหน้าสินค้า</a>
+    </div>
+</div>
+{% endblock %}

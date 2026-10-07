@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}ลืมรหัสผ่าน · {{ store_name }}{% endblock %}
+{% block content %}
+<div class="form-box">
+    <h1 class="page-title">ลืมรหัสผ่าน</h1>
+    <div class="notice">
+        หากลืมรหัสผ่าน กรุณาติดต่อร้านเพื่อขอรีเซ็ตรหัสผ่าน<br>
+        โทร <strong>{{ store_phone }}</strong><br><br>
+        เมื่อทางร้านรีเซ็ตให้แล้ว ให้เข้าสู่ระบบด้วยเบอร์โทรของคุณ
+        ระบบจะให้คุณตั้งรหัสผ่านใหม่ทันที
+    </div>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-block">กลับไปหน้าเข้าสู่ระบบ</a>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}ตั้งรหัสผ่านใหม่ · {{ store_name }}{% endblock %}
+{% block content %}
+<div class="form-box">
+    <h1 class="page-title">ตั้งรหัสผ่านใหม่</h1>
+    <div class="notice">บัญชีของคุณถูกรีเซ็ตรหัสผ่าน กรุณาตั้งรหัสผ่านใหม่เพื่อใช้งานต่อ</div>
+    <form method="post">
+        <div class="form-group">
+            <label>รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)</label>
+            <input type="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <label>ยืนยันรหัสผ่านใหม่</label>
+            <input type="password" name="confirm" required>
+        </div>
+        <button type="submit" class="btn btn-block">บันทึกรหัสผ่านใหม่</button>
+    </form>
+</div>
+{% endblock %}

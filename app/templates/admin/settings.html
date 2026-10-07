@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}ตั้งค่าร้าน · {{ store_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">ตั้งค่าร้าน</h1>
+{% include "admin/_nav.html" %}
+
+<div class="notice">
+    ข้อมูลที่ตั้งค่าตรงนี้จะแสดงบนเว็บทันที เช่น ชื่อร้านบนแถบเมนู
+    เบอร์โทรในข้อความติดต่อ และข้อความแจ้งลูกค้าหลังสั่งซื้อ/สั่งจอง
+</div>
+
+<div class="form-box wide">
+    <form method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>โลโก้ร้าน (แสดงมุมซ้ายบนของแถบเมนู)</label>
+            {% if current.logo_url %}
+                <div style="margin-bottom:8px;">
+                    <img src="{{ current.logo_url }}" alt="โลโก้" style="height:48px; border-radius:8px; background:#eee; padding:2px;">
+                </div>
+            {% endif %}
+            <input type="file" name="logo" accept="image/*">
+            <span class="muted" style="font-size:.82rem;">แนะนำรูปสี่เหลี่ยมจัตุรัสหรือใกล้เคียง</span>
+        </div>
+        {% for key, label, is_long in fields %}
+        <div class="form-group">
+            <label>{{ label }}</label>
+            {% if key == "theme_color" %}
+                <div class="row-actions">
+                    <input type="color" name="{{ key }}" value="{{ current[key] or '#ee4d2d' }}"
+                           style="width:60px; height:44px; padding:4px; cursor:pointer;">
+                    <span class="muted">เลือกสีหลักของเว็บ (ปุ่ม ลิงก์ แถบบน ฯลฯ)</span>
+                </div>
+            {% elif is_long %}
+                <textarea name="{{ key }}">{{ current[key] }}</textarea>
+            {% else %}
+                <input type="text" name="{{ key }}" value="{{ current[key] }}">
+            {% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn">บันทึกการตั้งค่า</button>
+    </form>
+</div>
+{% endblock %}

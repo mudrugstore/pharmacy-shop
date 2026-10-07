@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}ตะกร้าสินค้า · {{ store_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">ตะกร้าสินค้า</h1>
+
+{% if items %}
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr><th>สินค้า</th><th>ราคา</th><th>จำนวน</th><th class="text-right">รวม</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for it in items %}
+            <tr>
+                <td>{{ it.name }}</td>
+                <td>{{ "%.2f"|format(it.price) }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('shop.cart_update', product_id=it.id) }}" class="row-actions">
+                        <div class="qty-stepper">
+                            <button type="button" data-step="-1">&minus;</button>
+                            <input type="number" name="quantity" value="{{ it.quantity }}" min="0" max="{{ it.stock }}">
+                            <button type="button" data-step="1">+</button>
+                        </div>
+                        <button type="submit" class="btn-small btn-secondary">แก้ไข</button>
+                    </form>
+                </td>
+                <td class="text-right">{{ "%.2f"|format(it.subtotal) }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('shop.cart_remove', product_id=it.id) }}" class="inline-form">
+                        <button type="submit" class="btn-small btn-danger">ลบ</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr><th colspan="3" class="text-right">ยอดรวมทั้งหมด</th><th class="text-right">{{ "%.2f"|format(total) }} บาท</th><th></th></tr>
+        </tfoot>
+    </table>
+</div>
+
+<div class="notice" style="margin-top:16px;">
+    {{ checkout_message }} โทร <strong>{{ store_phone }}</strong>
+</div>
+
+<form method="post" action="{{ url_for('shop.checkout') }}" style="margin-top:12px;">
+    <div class="form-group">
+        <label>หมายเหตุถึงร้าน (ถ้ามี)</label>
+        <textarea name="note" placeholder="เช่น ที่อยู่จัดส่ง หรือรายละเอียดเพิ่มเติม"></textarea>
+    </div>
+    <button type="submit" class="btn">ยืนยันคำสั่งซื้อ</button>
+    <a href="{{ url_for('shop.index') }}" class="btn btn-secondary">เลือกสินค้าเพิ่ม</a>
+</form>
+{% else %}
+<p class="muted">ตะกร้าว่างเปล่า <a href="{{ url_for('shop.index') }}">เลือกซื้อสินค้า</a></p>
+{% endif %}
+{% endblock %}

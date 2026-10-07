@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}พรีออเดอร์ของฉัน · {{ store_name }}{% endblock %}
+{% block content %}
+<h1 class="page-title">พรีออเดอร์ของฉัน</h1>
+<div class="notice">{{ preorder_message }}</div>
+
+{% if requests %}
+<div class="table-wrap">
+    <table>
+        <thead><tr><th>สินค้า</th><th>จำนวน</th><th>สถานะ</th><th>วันที่สั่งจอง</th></tr></thead>
+        <tbody>
+        {% for r in requests %}
+            <tr>
+                <td>{{ r.product_name }}</td>
+                <td>{{ r.quantity }}</td>
+                <td>{{ r.status }}</td>
+                <td>{{ r.created_at|thaidt }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="muted">ยังไม่มีรายการพรีออเดอร์</p>
+{% endif %}
+{% endblock %}
