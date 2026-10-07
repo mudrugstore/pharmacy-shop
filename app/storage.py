@@ -56,7 +56,12 @@ def _upload(file_storage, max_size):
         data=data,
         timeout=30,
     )
-    resp.raise_for_status()
+    # ถ้าไม่สำเร็จ แสดงข้อความจริงจาก Supabase (ช่วยวินิจฉัย เช่น bucket not found, invalid jwt)
+    if resp.status_code >= 400:
+        raise RuntimeError(
+            f"Supabase storage ตอบ {resp.status_code}: {resp.text[:300]} "
+            f"(endpoint: {upload_endpoint})"
+        )
 
     # public URL (bucket ต้องตั้งเป็น public ใน Supabase)
     return f"{supabase_url}/storage/v1/object/public/{bucket}/{filename}"

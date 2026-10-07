@@ -388,3 +388,38 @@ def delete_banner(banner_id):
     db.query("DELETE FROM banners WHERE id = %s", (banner_id,), commit=True)
     flash("ลบแบนเนอร์แล้ว", "info")
     return redirect(url_for("admin.banners"))
+
+
+# ---------- วินิจฉัย Storage (ชั่วคราว ลบทีหลังได้) ----------
+@bp.route("/_diag-storage")
+@admin_required
+def diag_storage():
+    """ตรวจว่าแอปเห็น Supabase Storage ถูกต้องไหม (เรียก list buckets ด้วย key จริง)"""
+    import json
+    import requests
+    from flask import current_app, Response
+
+    url = (current_app.config.get("SUPABASE_URL") or "").rstrip("/")
+    key = current_app.config.get("SUPABASE_SERVICE_KEY") or ""
+    bucket = current_app.config.get("SUPABASE_BUCKET") or ""
+
+    out = {
+        "SUPABASE_URL_repr": repr(url),           # repr เผยช่องว่าง/newline ที่มองไม่เห็น
+        "SUPABASE_URL_len": len(url),
+        "SUPABASE_SERVICE_KEY_prefix": key[:12],
+        "SUPABASE_SERVICE_KEY_len": len(key),
+        "SUPABASE_BUCKET_repr": repr(bucket),
+    }
+    try:
+        r = requests.get(
+            f"{url}/storage/v1/bucket",
+            headers={"Authorization": f"Bearer {key}", "apikey": key},
+            timeout=20,
+        )
+        out["list_buckets_status"] = r.status_code
+        out["list_buckets_body"] = r.text[:500]
+    except Exception as e:
+        out["list_buckets_error"] = str(e)
+
+    return Response(json.dumps(out, ensure_ascii=False, indent=2),
+                    mimetype="application/json")
