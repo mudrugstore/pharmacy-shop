@@ -117,18 +117,23 @@ document.addEventListener("DOMContentLoaded", function () {
         var btn = form.querySelector('button[type="submit"]');
         if (btn && btn.disabled) return;
         if (btn) btn.disabled = true;
-        closeModal();
         fetch(form.action, { method: "POST", body: new FormData(form), headers: { "X-Requested-With": "fetch" } })
             .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
             .then(function (res) {
                 if (res.ok && res.j.ok) {
-                    if (window.showAppToast) window.showAppToast("ส่งคำสั่งจองแล้ว ร้านจะติดต่อกลับ", true);
+                    // สั่งจองสำเร็จ -> ไปหน้ารายการพรีออเดอร์
+                    window.location.href = "/preorder/my-requests";
                 } else {
+                    closeModal();
                     if (window.showAppToast) window.showAppToast((res.j && res.j.error) || "สั่งจองไม่สำเร็จ", false);
+                    if (btn) btn.disabled = false;
                 }
             })
-            .catch(function () { if (window.showAppToast) window.showAppToast("เกิดข้อผิดพลาด", false); })
-            .finally(function () { if (btn) btn.disabled = false; });
+            .catch(function () {
+                closeModal();
+                if (window.showAppToast) window.showAppToast("เกิดข้อผิดพลาด", false);
+                if (btn) btn.disabled = false;
+            });
     });
 });
 </script>

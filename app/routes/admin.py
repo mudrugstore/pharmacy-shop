@@ -61,17 +61,17 @@ def settings():
 @bp.route("/")
 @admin_required
 def dashboard():
-    stats = {
-        "products": db.query("SELECT COUNT(*) AS c FROM products", fetchone=True)["c"],
-        "categories": db.query("SELECT COUNT(*) AS c FROM categories", fetchone=True)["c"],
-        "orders": db.query("SELECT COUNT(*) AS c FROM orders", fetchone=True)["c"],
-        "preorders": db.query(
-            "SELECT COUNT(*) AS c FROM preorder_requests WHERE status = 'รอติดต่อกลับ'",
-            fetchone=True,
-        )["c"],
-        "users": db.query("SELECT COUNT(*) AS c FROM users WHERE is_admin = FALSE", fetchone=True)["c"],
-    }
-    return render_template("admin/dashboard.html", stats=stats)
+    # รวมเป็น query เดียว (เดิมแยก 5 query = 5 round-trip ไป Supabase)
+    row = db.query(
+        "SELECT "
+        "(SELECT COUNT(*) FROM products) AS products, "
+        "(SELECT COUNT(*) FROM categories) AS categories, "
+        "(SELECT COUNT(*) FROM orders) AS orders, "
+        "(SELECT COUNT(*) FROM preorder_requests WHERE status = 'รอติดต่อกลับ') AS preorders, "
+        "(SELECT COUNT(*) FROM users WHERE is_admin = FALSE) AS users",
+        fetchone=True,
+    )
+    return render_template("admin/dashboard.html", stats=row)
 
 
 # ---------- หมวดหมู่ ----------

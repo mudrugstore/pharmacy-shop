@@ -229,6 +229,9 @@ def init_schema():
     CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
     CREATE INDEX IF NOT EXISTS idx_preorder_user ON preorder_requests(user_id);
     CREATE INDEX IF NOT EXISTS idx_banners_order ON banners(is_active, sort_order);
+    -- index สถานะ (status มีอยู่ในตารางตั้งแต่ CREATE TABLE แล้ว)
+    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+    CREATE INDEX IF NOT EXISTS idx_preorder_status ON preorder_requests(status);
 
     -- migration: เพิ่มคอลัมน์ให้ตารางเดิมที่สร้างไว้ก่อนหน้า (ปลอดภัย รันซ้ำได้)
     ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
@@ -237,6 +240,11 @@ def init_schema():
     -- ติดตามว่าลูกค้าเห็นการอัปเดตสถานะล่าสุดหรือยัง (สำหรับ badge แจ้งเตือน)
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS seen_by_user BOOLEAN NOT NULL DEFAULT TRUE;
     ALTER TABLE preorder_requests ADD COLUMN IF NOT EXISTS seen_by_user BOOLEAN NOT NULL DEFAULT TRUE;
+
+    -- index ที่อ้างคอลัมน์ seen_by_user ต้องสร้าง "หลัง" ALTER TABLE ด้านบน
+    -- (ไม่งั้นบน DB ใหม่คอลัมน์ยังไม่มี -> UndefinedColumn)
+    CREATE INDEX IF NOT EXISTS idx_orders_user_seen ON orders(user_id, seen_by_user);
+    CREATE INDEX IF NOT EXISTS idx_preorder_user_seen ON preorder_requests(user_id, seen_by_user);
     """
     with get_conn() as conn:
         with conn.cursor() as cur:

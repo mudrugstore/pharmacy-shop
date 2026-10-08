@@ -3,6 +3,7 @@ from flask import (
     Blueprint, render_template, request, redirect, url_for, flash,
 )
 from app import db
+from app import cache
 from app.auth_utils import login_required, get_current_user
 
 bp = Blueprint("preorder", __name__, url_prefix="/preorder")
@@ -18,12 +19,16 @@ def index():
            ORDER BY name""",
         fetchall=True,
     )
-    # แบนเนอร์ที่ตั้งให้แสดงหน้าพรีออเดอร์ ('preorder') หรือทั้งสอง ('both')
-    banners = db.query(
-        "SELECT image_url, link_url FROM banners "
-        "WHERE is_active = TRUE AND display_page IN ('preorder', 'both') "
-        "ORDER BY sort_order, id",
-        fetchall=True,
+    # แบนเนอร์หน้าพรีออเดอร์ (cache 60 วิ เพราะเปลี่ยนนานๆ ครั้ง)
+    banners = cache.get_or_set(
+        "banners_preorder",
+        lambda: db.query(
+            "SELECT image_url, link_url FROM banners "
+            "WHERE is_active = TRUE AND display_page IN ('preorder', 'both') "
+            "ORDER BY sort_order, id",
+            fetchall=True,
+        ),
+        ttl=60,
     )
     return render_template("preorder/index.html", products=products, banners=banners)
 
