@@ -21,7 +21,7 @@
 
 {% if categories %}
 <div class="table-wrap responsive-cards">
-    <table>
+    <table class="js-datatable" data-page-size="10">
         <thead><tr><th>รูป</th><th>ชื่อหมวดหมู่</th><th>จำนวนสินค้า</th><th></th></tr></thead>
         <tbody>
         {% for c in categories %}
