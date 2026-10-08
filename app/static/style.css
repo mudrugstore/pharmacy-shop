@@ -442,14 +442,14 @@ input[type="number"]:focus {
     100% { width: 95%; }
 }
 
-/* overlay spinner เต็มจอ (ขึ้นเมื่อโหลดนานเกิน ~0.4s) */
+/* overlay spinner เต็มจอ (ขึ้นทันทีตอนเปลี่ยนหน้า) */
 .page-loader {
     position: fixed; inset: 0; z-index: 1999;
-    background: rgba(255,255,255,.72); backdrop-filter: blur(2px);
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0; visibility: hidden; transition: opacity .2s;
+    background: rgba(255,255,255,.9);
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+    display: none; align-items: center; justify-content: center;
 }
-.page-loader.show { opacity: 1; visibility: visible; }
+.page-loader.show { display: flex; }
 .loader-box { text-align: center; }
 .loader-spinner {
     width: 48px; height: 48px; margin: 0 auto 12px;

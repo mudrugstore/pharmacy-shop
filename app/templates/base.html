@@ -140,44 +140,47 @@ document.addEventListener("click", function (e) {
 })();
 
 // Loading indicator ตอนเปลี่ยนหน้า (ช่วยตอน server โหลดช้า เช่น cold start)
+// ออกแบบให้ทำงานบนมือถือด้วย: แสดง overlay ทันที ไม่หน่วงเวลา
 (function () {
     var loader = document.getElementById("pageLoader");
     var progress = document.getElementById("pageProgress");
+    if (!loader || !progress) return;
     var shown = false;
 
     function showLoader() {
         if (shown) return;
         shown = true;
         progress.classList.add("active");
-        // หน่วงเล็กน้อยก่อนขึ้น overlay เต็มจอ ถ้าหน้าโหลดเร็วจะไม่ทันเห็น (ไม่กะพริบรก)
-        loader._t = setTimeout(function () { loader.classList.add("show"); }, 400);
+        loader.classList.add("show");   // ขึ้นทันที (มือถือมักไม่ทัน setTimeout)
     }
     function hideLoader() {
         shown = false;
-        clearTimeout(loader._t);
         loader.classList.remove("show");
         progress.classList.remove("active");
     }
 
-    // คลิกลิงก์ภายในเว็บ (ไม่ใช่ลิงก์นอก, ไม่ใช่ _blank, ไม่ใช่ anchor #)
+    // คลิก/แตะลิงก์ภายในเว็บ
     document.addEventListener("click", function (e) {
         var a = e.target.closest("a");
         if (!a) return;
         var href = a.getAttribute("href") || "";
         if (!href || href.charAt(0) === "#") return;
+        if (href.indexOf("javascript:") === 0) return;
         if (a.target === "_blank" || a.hasAttribute("download")) return;
         if (e.ctrlKey || e.metaKey || e.shiftKey) return;  // เปิดแท็บใหม่
-        // ลิงก์ภายในโดเมนเดียวกันเท่านั้น
-        if (a.host && a.host !== window.location.host) return;
+        if (a.host && a.host !== window.location.host) return;  // ลิงก์นอกเว็บ
         showLoader();
     });
 
     // submit form (ค้นหา/สั่งซื้อ/บันทึก)
     document.addEventListener("submit", function () { showLoader(); });
 
-    // ซ่อน loader เมื่อหน้าใหม่โหลดเสร็จ หรือกดปุ่ม back (bfcache)
+    // ซ่อน loader เมื่อหน้าใหม่โหลดเสร็จ หรือกดปุ่ม back (รองรับ bfcache ของมือถือ)
     window.addEventListener("pageshow", hideLoader);
-    window.addEventListener("beforeunload", function () {});
+    window.addEventListener("load", hideLoader);
+    document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "visible") hideLoader();
+    });
 })();
 </script>
 </body>
