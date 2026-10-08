@@ -12,28 +12,26 @@
 {% if products %}
 <div class="grid">
     {% for p in products %}
-    <div class="card">
+    <div class="card js-pre"
+         data-id="{{ p.id }}"
+         data-name="{{ p.name|e }}"
+         data-price="{{ p.price|money }}"
+         data-image="{{ p.image_url|e }}"
+         data-desc="{{ (p.description or '')|e }}">
         <span class="badge-corner badge-preorder">พรีออเดอร์</span>
-        {% if p.image_url %}
-            <img src="{{ p.image_url }}" alt="{{ p.name }}" class="card-img">
-        {% else %}
-            <div class="card-img-placeholder">ไม่มีรูป</div>
-        {% endif %}
-        <div class="card-body">
-            <div class="card-title">{{ p.name }}</div>
-            <div class="card-price"><span class="cur">฿</span>{{ p.price|money }}</div>
-            {% if current_user and not current_user.is_admin %}
-            <form method="post" action="{{ url_for('preorder.make_request', product_id=p.id) }}" class="row-actions" style="margin-top:6px;">
-                <div class="qty-stepper">
-                    <button type="button" data-step="-1">&minus;</button>
-                    <input type="number" name="quantity" value="1" min="1">
-                    <button type="button" data-step="1">+</button>
-                </div>
-                <button type="submit" class="btn btn-small">สั่งจอง</button>
-            </form>
-            {% elif not current_user %}
-                <a href="{{ url_for('auth.login') }}" class="btn btn-small" style="margin-top:6px;">เข้าสู่ระบบเพื่อสั่งจอง</a>
-            {% endif %}
+        <div class="card-link js-pre-open" style="cursor:pointer;">
+            <div class="card-img-wrap">
+                {% if p.image_url %}
+                    <img src="{{ p.image_url }}" alt="{{ p.name }}" class="card-img" loading="lazy">
+                {% else %}
+                    <div class="card-img-placeholder">&#128138;</div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="card-title">{{ p.name }}</div>
+                <div class="card-price"><span class="cur">฿</span>{{ p.price|money }}</div>
+                <div class="card-meta"><span class="card-cat">สั่งจองล่วงหน้า</span></div>
+            </div>
         </div>
     </div>
     {% endfor %}
@@ -41,4 +39,97 @@
 {% else %}
 <p class="muted">ขณะนี้ยังไม่มีสินค้าเปิดให้พรีออเดอร์</p>
 {% endif %}
+
+{# ===== Popup สั่งจองพรีออเดอร์ (ไม่โหลดหน้าใหม่) ===== #}
+<div id="preModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true">
+        <button type="button" class="modal-close" id="preClose" aria-label="ปิด">&times;</button>
+        <div class="modal-content">
+            <div class="modal-img">
+                <img id="preImg" src="" alt="">
+                <div id="preImgPh" class="card-img-placeholder" style="display:none;">&#128138;</div>
+            </div>
+            <div class="modal-info">
+                <div class="muted" style="font-size:.85rem;">สั่งจองล่วงหน้า</div>
+                <h2 id="preName" style="font-size:1.3rem; margin:6px 0;"></h2>
+                <div class="pd-price"><span class="num"><span style="font-size:1rem;">฿</span><span id="prePrice"></span></span></div>
+                <div id="preAction"></div>
+                <div style="margin-top:16px;">
+                    <div class="section-title" style="margin-top:0;">รายละเอียดสินค้า</div>
+                    <p class="muted" id="preDesc" style="white-space:pre-line;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var modal = document.getElementById("preModal");
+    if (!modal) return;
+    var loggedIn = document.body.dataset.loggedIn === "1";
+    var loginUrl = document.body.dataset.loginUrl;
+    var el = {
+        img: document.getElementById("preImg"),
+        imgPh: document.getElementById("preImgPh"),
+        name: document.getElementById("preName"),
+        price: document.getElementById("prePrice"),
+        action: document.getElementById("preAction"),
+        desc: document.getElementById("preDesc"),
+    };
+
+    function openModal(card) {
+        var d = card.dataset;
+        if (d.image) { el.img.src = d.image; el.img.style.display = "block"; el.imgPh.style.display = "none"; }
+        else { el.img.style.display = "none"; el.imgPh.style.display = "flex"; }
+        el.name.textContent = d.name;
+        el.price.textContent = d.price;
+        el.desc.textContent = d.desc || "ไม่มีรายละเอียด";
+        if (loggedIn) {
+            el.action.innerHTML =
+                '<form method="post" action="/preorder/request/' + d.id + '" class="js-pre-submit">' +
+                '<div class="qty-stepper" style="margin-bottom:10px;">' +
+                '<button type="button" data-step="-1">&minus;</button>' +
+                '<input type="number" name="quantity" value="1" min="1">' +
+                '<button type="button" data-step="1">+</button></div>' +
+                '<button type="submit" class="btn" style="min-width:200px;">&#128197; สั่งจอง</button>' +
+                '</form>';
+        } else {
+            el.action.innerHTML = '<a href="' + loginUrl + '" class="btn" style="min-width:200px;">เข้าสู่ระบบเพื่อสั่งจอง</a>';
+        }
+        modal.classList.add("show");
+        document.body.style.overflow = "hidden";
+    }
+    function closeModal() { modal.classList.remove("show"); document.body.style.overflow = ""; }
+
+    document.addEventListener("click", function (e) {
+        var open = e.target.closest(".js-pre-open");
+        if (open) { openModal(open.closest(".js-pre")); return; }
+        if (e.target === modal || e.target.id === "preClose") closeModal();
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeModal(); });
+
+    // สั่งจองแบบ AJAX
+    document.addEventListener("submit", function (e) {
+        var form = e.target;
+        if (!form.classList || !form.classList.contains("js-pre-submit")) return;
+        e.preventDefault();
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn && btn.disabled) return;
+        if (btn) btn.disabled = true;
+        closeModal();
+        fetch(form.action, { method: "POST", body: new FormData(form), headers: { "X-Requested-With": "fetch" } })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (res) {
+                if (res.ok && res.j.ok) {
+                    if (window.showAppToast) window.showAppToast("ส่งคำสั่งจองแล้ว ร้านจะติดต่อกลับ", true);
+                } else {
+                    if (window.showAppToast) window.showAppToast((res.j && res.j.error) || "สั่งจองไม่สำเร็จ", false);
+                }
+            })
+            .catch(function () { if (window.showAppToast) window.showAppToast("เกิดข้อผิดพลาด", false); })
+            .finally(function () { if (btn) btn.disabled = false; });
+    });
+});
+</script>
 {% endblock %}

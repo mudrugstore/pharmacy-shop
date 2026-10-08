@@ -32,9 +32,12 @@ def index():
 @login_required
 def make_request(product_id):
     """สั่งจองพรีออเดอร์ -> บันทึกคำขอ แล้วแจ้งว่าร้านจะติดต่อกลับ"""
+    from flask import jsonify
+    from app import settings
     user = get_current_user()
     qty = request.form.get("quantity", type=int) or 1
     qty = max(1, qty)
+    is_ajax = request.headers.get("X-Requested-With") == "fetch"
 
     product = db.query(
         "SELECT id, name FROM products WHERE id = %s AND is_active = TRUE AND is_preorder = TRUE",
@@ -42,6 +45,8 @@ def make_request(product_id):
         fetchone=True,
     )
     if not product:
+        if is_ajax:
+            return jsonify({"ok": False, "error": "ไม่พบสินค้าพรีออเดอร์นี้"}), 404
         flash("ไม่พบสินค้าพรีออเดอร์นี้", "danger")
         return redirect(url_for("preorder.index"))
 
@@ -51,8 +56,10 @@ def make_request(product_id):
         (user["id"], product_id, product["name"], qty),
         commit=True,
     )
-    from app import settings
-    flash(f"ส่งคำสั่งจองเรียบร้อย {settings.get('preorder_message')}", "success")
+    msg = settings.get("preorder_message")
+    if is_ajax:
+        return jsonify({"ok": True, "message": msg})
+    flash(f"ส่งคำสั่งจองเรียบร้อย {msg}", "success")
     return redirect(url_for("preorder.my_requests"))
 
 

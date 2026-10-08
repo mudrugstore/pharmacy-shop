@@ -2,8 +2,8 @@
     <a href="{{ url_for('admin.dashboard') }}" class="btn-small btn-secondary">ภาพรวม</a>
     <a href="{{ url_for('admin.categories') }}" class="btn-small btn-secondary">หมวดหมู่</a>
     <a href="{{ url_for('admin.products') }}" class="btn-small btn-secondary">สินค้า</a>
-    <a href="{{ url_for('admin.orders') }}" class="btn-small btn-secondary">คำสั่งซื้อ{% if nav_badges.admin_orders %}<span class="nav-badge">{{ nav_badges.admin_orders }}</span>{% endif %}</a>
-    <a href="{{ url_for('admin.preorders') }}" class="btn-small btn-secondary">พรีออเดอร์{% if nav_badges.admin_preorders %}<span class="nav-badge">{{ nav_badges.admin_preorders }}</span>{% endif %}</a>
+    <a href="{{ url_for('admin.orders') }}" class="btn-small btn-secondary">คำสั่งซื้อ{% if nav_badges.admin_orders %}<span class="nav-dot"></span>{% endif %}</a>
+    <a href="{{ url_for('admin.preorders') }}" class="btn-small btn-secondary">พรีออเดอร์{% if nav_badges.admin_preorders %}<span class="nav-dot"></span>{% endif %}</a>
     <a href="{{ url_for('admin.users') }}" class="btn-small btn-secondary">ผู้ใช้</a>
     <a href="{{ url_for('admin.banners') }}" class="btn-small btn-secondary">แบนเนอร์</a>
     <a href="{{ url_for('admin.settings') }}" class="btn-small btn-secondary">ตั้งค่าร้าน</a>

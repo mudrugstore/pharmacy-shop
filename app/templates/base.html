@@ -74,12 +74,11 @@
             <a href="{{ url_for('shop.index') }}">สินค้าทั้งหมด</a>
             <a href="{{ url_for('preorder.index') }}">พรีออเดอร์</a>
             {% if current_user and not current_user.is_admin %}
-                <a href="{{ url_for('shop.orders') }}">คำสั่งซื้อของฉัน{% if nav_badges.my_orders %}<span class="nav-badge">{{ nav_badges.my_orders }}</span>{% endif %}</a>
-                <a href="{{ url_for('preorder.my_requests') }}">พรีออเดอร์ของฉัน{% if nav_badges.my_preorders %}<span class="nav-badge">{{ nav_badges.my_preorders }}</span>{% endif %}</a>
+                <a href="{{ url_for('shop.orders') }}">คำสั่งซื้อของฉัน{% if nav_badges.my_orders %}<span class="nav-dot"></span>{% endif %}</a>
+                <a href="{{ url_for('preorder.my_requests') }}">พรีออเดอร์ของฉัน{% if nav_badges.my_preorders %}<span class="nav-dot"></span>{% endif %}</a>
             {% endif %}
             {% if current_user and current_user.is_admin %}
-                {% set admin_total = nav_badges.admin_orders + nav_badges.admin_preorders %}
-                <a href="{{ url_for('admin.dashboard') }}">แผงแอดมิน{% if admin_total %}<span class="nav-badge">{{ admin_total }}</span>{% endif %}</a>
+                <a href="{{ url_for('admin.dashboard') }}">แผงแอดมิน{% if nav_badges.admin_orders or nav_badges.admin_preorders %}<span class="nav-dot"></span>{% endif %}</a>
             {% endif %}
             <a href="{{ url_for('shop.help_page') }}">ช่วยเหลือ</a>
             <span class="spacer"></span>
@@ -193,6 +192,7 @@ document.addEventListener("click", function (e) {
         if (!f || !f.classList) return;
         if (f.hasAttribute("data-ajax")) return;        // ฟอร์ม AJAX ทั่วไป
         if (f.classList.contains("js-add-cart")) return; // ฟอร์มเพิ่มตะกร้า (AJAX)
+        if (f.classList.contains("js-pre-submit")) return; // ฟอร์มสั่งจองพรีออเดอร์ (AJAX)
         showLoader();
     });
 
@@ -218,6 +218,8 @@ document.addEventListener("click", function (e) {
         clearTimeout(toastTimer);
         toastTimer = setTimeout(function () { toast.className = "toast"; }, 1800);
     }
+    // ให้สคริปต์หน้าอื่น (เช่น พรีออเดอร์) เรียก toast ได้
+    window.showAppToast = showToast;
     function bumpCart(count) {
         if (badge) {
             badge.textContent = count;

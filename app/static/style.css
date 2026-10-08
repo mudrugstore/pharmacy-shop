@@ -90,13 +90,13 @@ body > header {
 }
 .top-user { color: #fff; font-size: .9rem; }
 
-/* badge ตัวเลขเล็กที่เมนู (แจ้งเตือนรายการใหม่/อัปเดต) */
-.nav-badge {
-    display: inline-flex; align-items: center; justify-content: center;
-    min-width: 18px; height: 18px; padding: 0 5px; margin-left: 4px;
-    background: #ff5252; color: #fff; border-radius: 9px;
-    font-size: .7rem; font-weight: 700; line-height: 1; vertical-align: middle;
+/* จุดแดงเล็กที่เมนู (แจ้งเตือนว่ามีรายการใหม่/อัปเดต) */
+.nav-dot {
+    display: inline-block; width: 8px; height: 8px; margin-left: 5px;
+    background: #ff5252; border-radius: 50%; vertical-align: middle;
+    animation: nav-dot-pulse 1.6s ease-in-out infinite;
 }
+@keyframes nav-dot-pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
 
 /* เมนูรองใต้ search */
 .subnav { background: #fff; border-bottom: 1px solid var(--border); }

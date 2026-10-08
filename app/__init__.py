@@ -116,20 +116,20 @@ def create_app(config_class=Config):
 
 def _nav_badges(user):
     """
-    นับ badge แจ้งเตือนสำหรับเมนู (query เดียวต่อ request เฉพาะเมื่อ login)
-    - admin: ออเดอร์รอดำเนินการ + พรีออเดอร์รอติดต่อกลับ
-    - user:  ออเดอร์/พรีออเดอร์ที่ admin อัปเดตสถานะแต่ยังไม่เห็น (seen_by_user=FALSE)
+    badge แจ้งเตือนสำหรับเมนู (จุดแดง มี/ไม่มี) — ใช้ EXISTS เร็วกว่า COUNT
+    เพราะ DB หยุดค้นทันทีที่เจอแถวแรก (query เดียวต่อ request เฉพาะเมื่อ login)
     """
     from app import db
-    badges = {"admin_orders": 0, "admin_preorders": 0, "my_orders": 0, "my_preorders": 0}
+    badges = {"admin_orders": False, "admin_preorders": False,
+              "my_orders": False, "my_preorders": False}
     if not user:
         return badges
     try:
         if user["is_admin"]:
             row = db.query(
                 "SELECT "
-                "(SELECT COUNT(*) FROM orders WHERE status = 'รอดำเนินการ') AS o, "
-                "(SELECT COUNT(*) FROM preorder_requests WHERE status = 'รอติดต่อกลับ') AS p",
+                "EXISTS(SELECT 1 FROM orders WHERE status = 'รอดำเนินการ') AS o, "
+                "EXISTS(SELECT 1 FROM preorder_requests WHERE status = 'รอติดต่อกลับ') AS p",
                 fetchone=True,
             )
             badges["admin_orders"] = row["o"]
@@ -137,8 +137,8 @@ def _nav_badges(user):
         else:
             row = db.query(
                 "SELECT "
-                "(SELECT COUNT(*) FROM orders WHERE user_id = %s AND seen_by_user = FALSE) AS o, "
-                "(SELECT COUNT(*) FROM preorder_requests WHERE user_id = %s AND seen_by_user = FALSE) AS p",
+                "EXISTS(SELECT 1 FROM orders WHERE user_id = %s AND seen_by_user = FALSE) AS o, "
+                "EXISTS(SELECT 1 FROM preorder_requests WHERE user_id = %s AND seen_by_user = FALSE) AS p",
                 (user["id"], user["id"]),
                 fetchone=True,
             )
