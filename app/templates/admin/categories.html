@@ -20,28 +20,31 @@
 </div>
 
 {% if categories %}
-<div class="table-wrap responsive-cards">
-    <table class="js-datatable" data-page-size="10">
-        <thead><tr><th data-no-sort>รูป</th><th>ชื่อหมวดหมู่</th><th>จำนวนสินค้า</th><th data-no-sort>จัดการ</th></tr></thead>
-        <tbody>
-        {% for c in categories %}
-            <tr>
-                <td data-label="รูป">
-                    {% if c.image_url %}<img src="{{ c.image_url }}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">
-                    {% else %}<span class="muted">-</span>{% endif %}
-                </td>
-                <td data-label="ชื่อหมวดหมู่">{{ c.name }}</td>
-                <td data-label="จำนวนสินค้า">{{ c.product_count }}</td>
-                <td data-label="จัดการ">
-                    <form method="post" action="{{ url_for('admin.delete_category', category_id=c.id) }}" class="inline-form"
-                          onsubmit="return confirm('ลบหมวดหมู่ {{ c.name }}?');">
-                        <button type="submit" class="btn-small btn-danger">ลบ</button>
-                    </form>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+<div class="cat-manage-grid">
+    {% for c in categories %}
+    <form method="post" action="{{ url_for('admin.edit_category', category_id=c.id) }}"
+          enctype="multipart/form-data" class="cat-manage-card">
+        <label class="cat-img-edit" title="คลิกเพื่อเปลี่ยนรูป">
+            {% if c.image_url %}
+                <img src="{{ c.image_url }}" alt="{{ c.name }}">
+            {% else %}
+                <div class="no-img" style="width:100%;height:100%;">&#128137;</div>
+            {% endif %}
+            <span class="cat-img-overlay">เปลี่ยนรูป</span>
+            <input type="file" name="image" accept="image/*" hidden onchange="this.form.querySelector('.cat-img-hint').textContent='เลือกรูปใหม่แล้ว ✓'">
+        </label>
+        <div class="cat-img-hint muted"></div>
+        <input type="text" name="name" value="{{ c.name }}" class="cat-name-input" required>
+        <div class="muted" style="font-size:.8rem;">{{ c.product_count }} สินค้า</div>
+        <div class="row-actions" style="margin-top:8px;">
+            <button type="submit" class="btn-small">บันทึก</button>
+            <button type="submit" class="btn-small btn-danger"
+                    formaction="{{ url_for('admin.delete_category', category_id=c.id) }}"
+                    formnovalidate
+                    onclick="return confirm('ลบหมวดหมู่ {{ c.name }}?');">ลบ</button>
+        </div>
+    </form>
+    {% endfor %}
 </div>
 {% else %}
 <p class="muted">ยังไม่มีหมวดหมู่</p>

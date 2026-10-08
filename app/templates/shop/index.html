@@ -145,9 +145,9 @@
         if (stock > 0) {
             el.stock.innerHTML = '<span class="stock-ok">&#10003; มีสินค้า ' + stock + ' ชิ้น</span>';
             if (loggedIn) {
-                // ฟอร์มเพิ่มลงตะกร้า — submit จริงไป server (ตัดสต็อกถูกต้อง)
+                // ฟอร์มเพิ่มลงตะกร้า — AJAX (ไม่เปลี่ยนหน้า) + animation บินเข้าตะกร้า
                 el.action.innerHTML =
-                    '<form method="post" action="/cart/add/' + d.id + '">' +
+                    '<form method="post" action="/cart/add/' + d.id + '" class="js-add-cart" data-img="#mdImg">' +
                     '<div class="qty-stepper" style="margin-bottom:10px;">' +
                     '<button type="button" data-step="-1">&minus;</button>' +
                     '<input type="number" name="quantity" value="1" min="1" max="' + stock + '">' +

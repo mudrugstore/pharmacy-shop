@@ -15,7 +15,11 @@
                 <td data-label="ลูกค้า">{{ o.customer_name }}</td>
                 <td data-label="เบอร์โทร">{{ o.phone }}</td>
                 <td data-label="ยอดรวม">{{ o.total|money }}</td>
-                <td data-label="สถานะ">{{ o.status }}</td>
+                <td data-label="สถานะ">
+                    {% if o.status == 'ยกเลิกโดยลูกค้า' %}<span class="pill pill-danger">{{ o.status }}</span>
+                    {% elif o.status == 'เสร็จสิ้น' %}<span class="pill pill-ok">{{ o.status }}</span>
+                    {% else %}<span class="pill pill-normal">{{ o.status }}</span>{% endif %}
+                </td>
                 <td data-label="วันที่">{{ o.created_at|thaidt }}</td>
                 <td data-label=""><a href="{{ url_for('admin.order_detail', order_id=o.id) }}" class="btn-small">รายละเอียด</a></td>
             </tr>

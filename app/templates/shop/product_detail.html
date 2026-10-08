@@ -20,7 +20,8 @@
         {% if product.stock > 0 %}
             <div class="stock-ok" style="margin-bottom:12px;">&#10003; มีสินค้า {{ product.stock }} ชิ้น</div>
             {% if current_user and not current_user.is_admin %}
-            <form method="post" action="{{ url_for('shop.cart_add', product_id=product.id) }}">
+            <form method="post" action="{{ url_for('shop.cart_add', product_id=product.id) }}"
+                  class="js-add-cart" data-img=".pd-img img">
                 <div class="form-group">
                     <label>จำนวน</label>
                     <div class="qty-stepper">

@@ -62,9 +62,33 @@ def my_requests():
     """ประวัติการสั่งจองพรีออเดอร์ของลูกค้า"""
     user = get_current_user()
     rows = db.query(
-        """SELECT product_name, quantity, status, created_at
+        """SELECT id, product_name, quantity, status, created_at
            FROM preorder_requests WHERE user_id = %s ORDER BY created_at DESC""",
         (user["id"],),
         fetchall=True,
     )
     return render_template("preorder/my_requests.html", requests=rows)
+
+
+@bp.route("/cancel/<int:request_id>", methods=["POST"])
+@login_required
+def cancel_request(request_id):
+    """ยกเลิกพรีออเดอร์ได้เองถ้าสถานะยังเป็น 'รอติดต่อกลับ' (ร้านยังไม่ตอบ)"""
+    user = get_current_user()
+    pr = db.query(
+        "SELECT id, status FROM preorder_requests WHERE id = %s AND user_id = %s",
+        (request_id, user["id"]),
+        fetchone=True,
+    )
+    if not pr:
+        flash("ไม่พบรายการนี้", "danger")
+    elif pr["status"] != "รอติดต่อกลับ":
+        flash("ไม่สามารถยกเลิกได้ เนื่องจากทางร้านได้ดำเนินการแล้ว", "warning")
+    else:
+        db.query(
+            "UPDATE preorder_requests SET status = 'ยกเลิกโดยลูกค้า' WHERE id = %s AND user_id = %s",
+            (request_id, user["id"]),
+            commit=True,
+        )
+        flash("ยกเลิกพรีออเดอร์แล้ว", "success")
+    return redirect(url_for("preorder.my_requests"))

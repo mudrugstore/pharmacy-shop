@@ -5,16 +5,27 @@
 <div class="notice">{{ preorder_message }}</div>
 
 {% if requests %}
-<div class="table-wrap">
+<div class="table-wrap responsive-cards">
     <table>
-        <thead><tr><th>สินค้า</th><th>จำนวน</th><th>สถานะ</th><th>วันที่สั่งจอง</th></tr></thead>
+        <thead><tr><th>สินค้า</th><th>จำนวน</th><th>สถานะ</th><th>วันที่สั่งจอง</th><th data-no-sort>จัดการ</th></tr></thead>
         <tbody>
         {% for r in requests %}
             <tr>
-                <td>{{ r.product_name }}</td>
-                <td>{{ r.quantity }}</td>
-                <td>{{ r.status }}</td>
-                <td>{{ r.created_at|thaidt }}</td>
+                <td data-label="สินค้า">{{ r.product_name }}</td>
+                <td data-label="จำนวน">{{ r.quantity }}</td>
+                <td data-label="สถานะ">
+                    {% if r.status == 'ยกเลิกโดยลูกค้า' %}<span class="pill pill-danger">{{ r.status }}</span>
+                    {% else %}{{ r.status }}{% endif %}
+                </td>
+                <td data-label="วันที่สั่งจอง">{{ r.created_at|thaidt }}</td>
+                <td data-label="จัดการ">
+                    {% if r.status == 'รอติดต่อกลับ' %}
+                    <form method="post" action="{{ url_for('preorder.cancel_request', request_id=r.id) }}" class="inline-form"
+                          onsubmit="return confirm('ยกเลิกการจอง {{ r.product_name }}?');">
+                        <button type="submit" class="btn-small btn-danger">ยกเลิก</button>
+                    </form>
+                    {% else %}<span class="muted">-</span>{% endif %}
+                </td>
             </tr>
         {% endfor %}
         </tbody>

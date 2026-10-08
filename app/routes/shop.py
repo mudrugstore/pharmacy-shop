@@ -153,16 +153,22 @@ def _build_cart_items(cart):
 @bp.route("/cart/add/<int:product_id>", methods=["POST"])
 @login_required
 def cart_add(product_id):
+    from flask import jsonify
     qty = request.form.get("quantity", type=int) or 1
+    is_ajax = request.headers.get("X-Requested-With") == "fetch"
     product = db.query(
         "SELECT id, stock FROM products WHERE id = %s AND is_active = TRUE AND is_preorder = FALSE",
         (product_id,),
         fetchone=True,
     )
     if not product:
+        if is_ajax:
+            return jsonify({"ok": False, "error": "ไม่พบสินค้านี้"}), 404
         flash("ไม่พบสินค้านี้", "danger")
         return redirect(url_for("shop.index"))
     if product["stock"] <= 0:
+        if is_ajax:
+            return jsonify({"ok": False, "error": "สินค้าหมดสต็อก"}), 400
         flash("สินค้าหมดสต็อก", "warning")
         return redirect(url_for("shop.product_detail", product_id=product_id))
 
@@ -173,6 +179,10 @@ def cart_add(product_id):
     new_qty = min(new_qty, product["stock"])
     cart[key] = max(1, new_qty)
     _save_cart(cart)
+
+    if is_ajax:
+        count = sum(cart.values())
+        return jsonify({"ok": True, "cart_count": count})
     flash("เพิ่มลงตะกร้าแล้ว", "success")
     return redirect(url_for("shop.cart"))
 
@@ -180,17 +190,41 @@ def cart_add(product_id):
 @bp.route("/cart/update/<int:product_id>", methods=["POST"])
 @login_required
 def cart_update(product_id):
-    qty = request.form.get("quantity", type=int) or 1
+    from flask import jsonify
+    qty = request.form.get("quantity", type=int)
+    if qty is None:
+        qty = 1
+    is_ajax = request.headers.get("X-Requested-With") == "fetch"
     cart = _get_cart()
     key = str(product_id)
+    removed = False
     if key in cart:
         if qty <= 0:
             cart.pop(key)
+            removed = True
         else:
             product = db.query("SELECT stock FROM products WHERE id = %s", (product_id,), fetchone=True)
             max_stock = product["stock"] if product else qty
             cart[key] = min(qty, max_stock)
         _save_cart(cart)
+
+    if is_ajax:
+        items, total = _build_cart_items(_get_cart())
+        qty_now = 0
+        subtotal = 0
+        for it in items:
+            if it["id"] == product_id:
+                qty_now = it["quantity"]
+                subtotal = float(it["subtotal"])
+        return jsonify({
+            "ok": True,
+            "removed": removed or qty_now == 0,
+            "quantity": qty_now,
+            "subtotal": subtotal,
+            "total": float(total),
+            "cart_count": sum(_get_cart().values()),
+            "empty": len(items) == 0,
+        })
     return redirect(url_for("shop.cart"))
 
 
@@ -290,6 +324,52 @@ def orders():
         fetchall=True,
     )
     return render_template("shop/orders.html", orders=rows)
+
+
+@bp.route("/orders/cancel/<int:order_id>", methods=["POST"])
+@login_required
+def cancel_order(order_id):
+    """
+    ยกเลิกคำสั่งซื้อได้เองถ้าสถานะยังเป็น 'รอดำเนินการ' (ร้านยังไม่ดำเนินการ)
+    และคืนสต็อกสินค้ากลับ (เพราะตอนสั่งซื้อตัดสต็อกไปแล้ว)
+    """
+    user = get_current_user()
+    with db.get_conn() as conn:
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, status FROM orders WHERE id = %s AND user_id = %s FOR UPDATE",
+                    (order_id, user["id"]),
+                )
+                order = cur.fetchone()
+                if not order:
+                    conn.rollback()
+                    flash("ไม่พบคำสั่งซื้อนี้", "danger")
+                    return redirect(url_for("shop.orders"))
+                if order["status"] != "รอดำเนินการ":
+                    conn.rollback()
+                    flash("ไม่สามารถยกเลิกได้ เนื่องจากทางร้านได้ดำเนินการแล้ว", "warning")
+                    return redirect(url_for("shop.orders"))
+                # คืนสต็อก
+                cur.execute(
+                    "SELECT product_id, quantity FROM order_items WHERE order_id = %s AND product_id IS NOT NULL",
+                    (order_id,),
+                )
+                for item in cur.fetchall():
+                    cur.execute(
+                        "UPDATE products SET stock = stock + %s WHERE id = %s",
+                        (item["quantity"], item["product_id"]),
+                    )
+                cur.execute(
+                    "UPDATE orders SET status = 'ยกเลิกโดยลูกค้า' WHERE id = %s",
+                    (order_id,),
+                )
+                conn.commit()
+                flash("ยกเลิกคำสั่งซื้อแล้ว", "success")
+        except Exception as e:
+            conn.rollback()
+            flash(f"ยกเลิกไม่สำเร็จ: {e}", "danger")
+    return redirect(url_for("shop.orders"))
 
 
 @bp.route("/orders/<int:order_id>")

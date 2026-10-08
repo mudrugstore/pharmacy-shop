@@ -33,10 +33,24 @@
     </table>
 </div>
 
-<h2 class="section-title">อัปเดตสถานะ</h2>
+<h2 class="section-title">สถานะปัจจุบัน</h2>
+{% if order.status == 'ยกเลิกโดยลูกค้า' %}
+    <div class="notice" style="background:#fdecea; border-color:#f3b6b0; color:#a3271c;">
+        &#9888; คำสั่งซื้อนี้ถูก <strong>ยกเลิกโดยลูกค้า</strong> (สต็อกถูกคืนให้อัตโนมัติแล้ว)
+    </div>
+{% else %}
+    <p><span class="pill pill-normal">{{ order.status }}</span></p>
+{% endif %}
+
+<h3 class="section-title" style="font-size:1rem;">อัปเดตสถานะ</h3>
 <form method="post" class="row-actions">
     <select name="status">
-        {% for s in ['รอดำเนินการ', 'กำลังเตรียมของ', 'พร้อมรับ/จัดส่ง', 'ชำระเงินแล้ว', 'เสร็จสิ้น', 'ยกเลิก'] %}
+        {% set statuses = ['รอดำเนินการ', 'กำลังเตรียมของ', 'พร้อมรับ/จัดส่ง', 'ชำระเงินแล้ว', 'เสร็จสิ้น', 'ยกเลิก'] %}
+        {# ถ้าสถานะปัจจุบันไม่อยู่ในรายการ (เช่น ยกเลิกโดยลูกค้า) ให้เพิ่มไว้ด้านบนและเลือกไว้ #}
+        {% if order.status not in statuses %}
+            <option value="{{ order.status }}" selected>{{ order.status }}</option>
+        {% endif %}
+        {% for s in statuses %}
             <option value="{{ s }}" {% if order.status == s %}selected{% endif %}>{{ s }}</option>
         {% endfor %}
     </select>

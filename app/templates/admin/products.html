@@ -4,57 +4,256 @@
 <h1 class="page-title">จัดการสินค้า</h1>
 {% include "admin/_nav.html" %}
 
-<a href="{{ url_for('admin.new_product') }}" class="btn" style="margin-bottom:16px;">+ เพิ่มสินค้าใหม่</a>
+<div class="row-actions" style="margin-bottom:16px; gap:10px;">
+    <a href="{{ url_for('admin.new_product') }}" class="btn">+ เพิ่มสินค้าใหม่</a>
+    <button type="button" class="btn btn-outline" id="toggleEdit">แก้ไขหลายรายการ</button>
+</div>
 
 {% if products %}
-<div class="table-wrap responsive-cards">
-    <table class="js-datatable" data-page-size="10">
-        <thead>
-            <tr><th data-no-sort>รูป</th><th>ชื่อ</th><th>หมวดหมู่</th><th>ราคา</th><th>คงเหลือ</th><th data-no-sort>ปรับสต็อก</th><th>ประเภท</th><th data-no-sort>จัดการ</th></tr>
-        </thead>
-        <tbody>
+<!-- ===== มุมมองปกติ (การ์ด grid แบบหน้า user เห็นภาพรวมหลายชิ้น) ===== -->
+<div id="viewMode">
+    <div class="dt-toolbar">
+        <input type="search" class="dt-search" id="adminProductSearch" placeholder="ค้นหาสินค้า...">
+        <span class="dt-count" id="adminProductCount"></span>
+    </div>
+    <div class="admin-prod-grid" id="adminProductGrid">
         {% for p in products %}
-            <tr>
-                <td data-label="รูป">
-                    {% if p.image_url %}<img src="{{ p.image_url }}" style="width:46px;height:46px;object-fit:cover;border-radius:6px;">
-                    {% else %}<div class="no-img">&#128138;</div>{% endif %}
-                </td>
-                <td data-label="ชื่อ"><strong>{{ p.name }}</strong></td>
-                <td data-label="หมวดหมู่">{{ p.category_name or '-' }}</td>
-                <td data-label="ราคา">฿{{ p.price|money }}</td>
-                <td data-label="คงเหลือ">
-                    {% if p.stock <= 0 %}
-                        <span class="pill pill-danger">หมด</span>
-                    {% elif p.stock <= 5 %}
-                        <span class="pill pill-warn">เหลือ {{ p.stock }}</span>
-                    {% else %}
-                        <span class="pill pill-ok">{{ p.stock }}</span>
-                    {% endif %}
-                </td>
-                <td data-label="ปรับสต็อก">
-                    <form method="post" action="{{ url_for('admin.update_stock', product_id=p.id) }}" class="row-actions">
-                        <input type="number" name="stock" value="{{ p.stock }}" min="0" class="qty-input" title="จำนวนคงเหลือ">
-                        <button type="submit" class="btn-small btn-secondary" title="บันทึกจำนวนสต็อก">บันทึก</button>
-                    </form>
-                </td>
-                <td data-label="ประเภท">
-                    {% if p.is_preorder %}
-                        <span class="pill pill-pre">พรีออเดอร์</span>
-                    {% else %}
-                        <span class="pill pill-normal">ทั่วไป</span>
-                    {% endif %}
-                </td>
-                <td data-label="จัดการ" class="row-actions">
-                    <a href="{{ url_for('admin.edit_product', product_id=p.id) }}" class="btn-small">แก้ไข</a>
+        <div class="admin-prod-card js-prod"
+             data-name="{{ p.name|lower }} {{ (p.category_name or '')|lower }}"
+             data-id="{{ p.id }}"
+             data-pname="{{ p.name|e }}"
+             data-desc="{{ (p.description or '')|e }}"
+             data-price="{{ '%.2f'|format(p.price) }}"
+             data-stock="{{ p.stock }}"
+             data-category="{{ p.category_id or '' }}"
+             data-preorder="{{ '1' if p.is_preorder else '0' }}"
+             data-badge="{{ (p.badge_text or '')|e }}">
+            {% if p.stock <= 0 %}
+                <span class="badge-corner badge-soldout">หมด</span>
+            {% elif p.stock <= 5 %}
+                <span class="badge-corner badge-low">เหลือ {{ p.stock }}</span>
+            {% endif %}
+            {% if p.is_preorder %}<span class="badge-corner-r">พรีออเดอร์</span>{% endif %}
+            <div class="apc-img">
+                {% if p.image_url %}<img src="{{ p.image_url }}" alt="{{ p.name }}" loading="lazy">
+                {% else %}<div class="no-img" style="width:100%;height:100%;border-radius:0;">&#128138;</div>{% endif %}
+            </div>
+            <div class="apc-body">
+                <div class="apc-name">{{ p.name }}</div>
+                <div class="apc-cat muted">{{ p.category_name or 'ไม่มีหมวดหมู่' }}</div>
+                <div class="apc-price">฿{{ p.price|money }}</div>
+                <div class="apc-stock">
+                    <span class="muted" style="font-size:.78rem;">คงเหลือ</span>
+                    {% if p.stock <= 0 %}<span class="pill pill-danger">หมด</span>
+                    {% elif p.stock <= 5 %}<span class="pill pill-warn">{{ p.stock }}</span>
+                    {% else %}<span class="pill pill-ok">{{ p.stock }}</span>{% endif %}
+                </div>
+                <div class="apc-actions">
+                    <button type="button" class="btn-small btn-block js-edit-prod">แก้ไข</button>
                     <form method="post" action="{{ url_for('admin.delete_product', product_id=p.id) }}" class="inline-form"
                           onsubmit="return confirm('ลบสินค้า {{ p.name }}?');">
                         <button type="submit" class="btn-small btn-danger">ลบ</button>
                     </form>
-                </td>
-            </tr>
+                </div>
+            </div>
+        </div>
         {% endfor %}
-        </tbody>
-    </table>
+    </div>
+    <p class="muted" id="adminProductEmpty" style="display:none;">ไม่พบสินค้าที่ค้นหา</p>
+</div>
+
+<!-- ===== โหมดแก้ไขหลายรายการ (inline edit ทั้งหมดใน form เดียว) ===== -->
+<div id="editMode" style="display:none;">
+    <div class="notice">แก้ไขชื่อ ราคา สต็อก และประเภทได้หลายรายการพร้อมกัน แล้วกด "บันทึกทั้งหมด" ครั้งเดียว</div>
+    <form method="post" action="{{ url_for('admin.bulk_update_products') }}">
+        <div class="bulk-actions">
+            <button type="submit" class="btn">บันทึกทั้งหมด</button>
+            <input type="search" class="dt-search" id="bulkSearch" placeholder="ค้นหาสินค้าที่จะแก้...">
+        </div>
+        <div class="table-wrap" style="margin-top:12px;">
+            <table class="bulk-table">
+                <thead>
+                    <tr><th>รูป</th><th>ชื่อสินค้า</th><th>ราคา</th><th>สต็อก</th><th>พรีออเดอร์</th></tr>
+                </thead>
+                <tbody>
+                {% for p in products %}
+                    <tr class="bulk-row" data-name="{{ p.name|lower }}">
+                        <input type="hidden" name="id" value="{{ p.id }}">
+                        <td>
+                            {% if p.image_url %}<img src="{{ p.image_url }}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">
+                            {% else %}<div class="no-img" style="width:40px;height:40px;">&#128138;</div>{% endif %}
+                        </td>
+                        <td><input type="text" name="name_{{ p.id }}" value="{{ p.name }}" required style="min-width:160px;"></td>
+                        <td><input type="number" name="price_{{ p.id }}" value="{{ '%.2f'|format(p.price) }}" step="0.01" min="0" style="width:100px;"></td>
+                        <td><input type="number" name="stock_{{ p.id }}" value="{{ p.stock }}" min="0" class="qty-input"></td>
+                        <td style="text-align:center;">
+                            <input type="checkbox" name="preorder_{{ p.id }}" {% if p.is_preorder %}checked{% endif %} style="width:20px;height:20px;">
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top:14px;">
+            <button type="submit" class="btn">บันทึกทั้งหมด</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var toggle = document.getElementById("toggleEdit");
+    var viewMode = document.getElementById("viewMode");
+    var editMode = document.getElementById("editMode");
+    var editing = false;
+    toggle.addEventListener("click", function () {
+        editing = !editing;
+        viewMode.style.display = editing ? "none" : "";
+        editMode.style.display = editing ? "" : "none";
+        toggle.textContent = editing ? "ปิดโหมดแก้ไข" : "แก้ไขหลายรายการ";
+        toggle.classList.toggle("btn-outline", !editing);
+    });
+    // ค้นหาในโหมดแก้ไข
+    var bulkSearch = document.getElementById("bulkSearch");
+    if (bulkSearch) {
+        bulkSearch.addEventListener("input", function () {
+            var q = this.value.trim().toLowerCase();
+            document.querySelectorAll(".bulk-row").forEach(function (r) {
+                r.style.display = (!q || r.dataset.name.indexOf(q) !== -1) ? "" : "none";
+            });
+        });
+    }
+
+    // ค้นหาในโหมดการ์ด (grid)
+    var ps = document.getElementById("adminProductSearch");
+    var grid = document.getElementById("adminProductGrid");
+    var countEl = document.getElementById("adminProductCount");
+    var emptyEl = document.getElementById("adminProductEmpty");
+    if (ps && grid) {
+        var cards = Array.prototype.slice.call(grid.querySelectorAll(".admin-prod-card"));
+        function updateCount(n) { if (countEl) countEl.textContent = "พบ " + n + " รายการ"; }
+        updateCount(cards.length);
+        ps.addEventListener("input", function () {
+            var q = this.value.trim().toLowerCase();
+            var shown = 0;
+            cards.forEach(function (c) {
+                var ok = !q || c.dataset.name.indexOf(q) !== -1;
+                c.style.display = ok ? "" : "none";
+                if (ok) shown++;
+            });
+            updateCount(shown);
+            if (emptyEl) emptyEl.style.display = shown ? "none" : "";
+        });
+    }
+
+    // ===== แก้ไขสินค้าผ่าน modal (ไม่เปลี่ยนหน้า) =====
+    var modal = document.getElementById("prodEditModal");
+    var form = document.getElementById("prodEditForm");
+    var errBox = document.getElementById("prodEditError");
+    function openEdit(card) {
+        var d = card.dataset;
+        form.action = "/admin/products/edit/" + d.id;
+        form.name.value = d.pname;
+        form.description.value = d.desc;
+        form.price.value = d.price;
+        form.stock.value = d.stock;
+        form.category_id.value = d.category || "";
+        form.badge_text.value = d.badge;
+        form.is_preorder.checked = d.preorder === "1";
+        form.image.value = "";
+        errBox.style.display = "none";
+        document.getElementById("prodEditTitle").textContent = "แก้ไข: " + d.pname;
+        modal.classList.add("show");
+        document.body.style.overflow = "hidden";
+    }
+    function closeEdit() { modal.classList.remove("show"); document.body.style.overflow = ""; }
+
+    document.addEventListener("click", function (e) {
+        var btn = e.target.closest(".js-edit-prod");
+        if (btn) { openEdit(btn.closest(".js-prod")); return; }
+        if (e.target === modal || e.target.id === "prodEditClose" || e.target.id === "prodEditCancel") closeEdit();
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeEdit(); });
+
+    // submit แบบ AJAX
+    if (form) {
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+            var btn = form.querySelector('button[type="submit"]');
+            btn.disabled = true; btn.textContent = "กำลังบันทึก...";
+            fetch(form.action, { method: "POST", body: new FormData(form), headers: { "X-Requested-With": "fetch" } })
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                .then(function (res) {
+                    if (res.ok && res.j.ok) {
+                        location.reload();   // โหลดใหม่เพื่อแสดงข้อมูล/รูปล่าสุด
+                    } else {
+                        errBox.textContent = (res.j && res.j.error) || "บันทึกไม่สำเร็จ";
+                        errBox.style.display = "";
+                        btn.disabled = false; btn.textContent = "บันทึก";
+                    }
+                })
+                .catch(function () {
+                    errBox.textContent = "เกิดข้อผิดพลาด ลองใหม่อีกครั้ง";
+                    errBox.style.display = "";
+                    btn.disabled = false; btn.textContent = "บันทึก";
+                });
+        });
+    }
+});
+</script>
+
+<!-- ===== Modal แก้ไขสินค้า ===== -->
+<div id="prodEditModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box" style="max-width:560px;" role="dialog" aria-modal="true">
+        <button type="button" class="modal-close" id="prodEditClose" aria-label="ปิด">&times;</button>
+        <div style="padding:22px;">
+            <h2 class="section-title" style="margin-top:0;" id="prodEditTitle">แก้ไขสินค้า</h2>
+            <div class="flash flash-danger" id="prodEditError" style="display:none;"></div>
+            <form id="prodEditForm" method="post" enctype="multipart/form-data" data-ajax>
+                <div class="form-group">
+                    <label>ชื่อสินค้า</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>หมวดหมู่</label>
+                    <select name="category_id">
+                        <option value="">— ไม่ระบุ —</option>
+                        {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>ป้ายมุมการ์ด (ไม่เกิน 20 ตัว)</label>
+                    <input type="text" name="badge_text" maxlength="20" placeholder="เช่น ยา, ใหม่ (เว้นว่าง = ไม่แสดง)">
+                </div>
+                <div class="form-group">
+                    <label>รายละเอียด</label>
+                    <textarea name="description"></textarea>
+                </div>
+                <div class="row-actions" style="gap:12px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>ราคา (บาท)</label>
+                        <input type="number" name="price" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>สต็อก</label>
+                        <input type="number" name="stock" min="0">
+                    </div>
+                </div>
+                <div class="form-group checkbox-row">
+                    <input type="checkbox" name="is_preorder" id="modal_preorder">
+                    <label for="modal_preorder" style="margin:0;">เป็นสินค้าพรีออเดอร์</label>
+                </div>
+                <div class="form-group">
+                    <label>เปลี่ยนรูป (ไม่เลือก = ใช้รูปเดิม)</label>
+                    <input type="file" name="image" accept="image/*">
+                </div>
+                <div class="row-actions" style="margin-top:4px;">
+                    <button type="submit" class="btn">บันทึก</button>
+                    <button type="button" class="btn btn-secondary" id="prodEditCancel">ยกเลิก</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% else %}
 <p class="muted">ยังไม่มีสินค้า</p>

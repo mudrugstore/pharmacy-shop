@@ -5,15 +5,26 @@
 {% if orders %}
 <div class="table-wrap responsive-cards">
     <table>
-        <thead><tr><th>เลขที่</th><th>วันที่</th><th>ยอดรวม</th><th>สถานะ</th><th></th></tr></thead>
+        <thead><tr><th>เลขที่</th><th>วันที่</th><th>ยอดรวม</th><th>สถานะ</th><th data-no-sort>จัดการ</th></tr></thead>
         <tbody>
         {% for o in orders %}
             <tr>
                 <td data-label="เลขที่">#{{ o.id }}</td>
                 <td data-label="วันที่">{{ o.created_at|thaidt }}</td>
                 <td data-label="ยอดรวม">{{ o.total|money }} บาท</td>
-                <td data-label="สถานะ">{{ o.status }}</td>
-                <td data-label=""><a href="{{ url_for('shop.order_detail', order_id=o.id) }}" class="btn-small">ดูรายละเอียด</a></td>
+                <td data-label="สถานะ">
+                    {% if o.status == 'ยกเลิกโดยลูกค้า' %}<span class="pill pill-danger">{{ o.status }}</span>
+                    {% else %}{{ o.status }}{% endif %}
+                </td>
+                <td data-label="จัดการ" class="row-actions">
+                    <a href="{{ url_for('shop.order_detail', order_id=o.id) }}" class="btn-small">รายละเอียด</a>
+                    {% if o.status == 'รอดำเนินการ' %}
+                    <form method="post" action="{{ url_for('shop.cancel_order', order_id=o.id) }}" class="inline-form"
+                          onsubmit="return confirm('ยกเลิกคำสั่งซื้อ #{{ o.id }}?');">
+                        <button type="submit" class="btn-small btn-danger">ยกเลิก</button>
+                    </form>
+                    {% endif %}
+                </td>
             </tr>
         {% endfor %}
         </tbody>

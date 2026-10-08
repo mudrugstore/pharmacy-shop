@@ -109,6 +109,33 @@ def categories():
     return render_template("admin/categories.html", categories=rows)
 
 
+@bp.route("/categories/edit/<int:category_id>", methods=["POST"])
+@admin_required
+def edit_category(category_id):
+    """แก้ไขชื่อ และ/หรือ รูปหมวดหมู่ (จากในแถวตาราง ไม่ต้องเปลี่ยนหน้า)"""
+    name = (request.form.get("name") or "").strip()
+    if not name:
+        flash("กรุณากรอกชื่อหมวดหมู่", "danger")
+        return redirect(url_for("admin.categories"))
+    # อัปโหลดรูปใหม่ถ้ามีการเลือกไฟล์
+    file = request.files.get("image")
+    if file and file.filename:
+        try:
+            image_url = upload_product_image(file)
+            if image_url:
+                db.query("UPDATE categories SET name=%s, image_url=%s WHERE id=%s",
+                         (name, image_url, category_id), commit=True)
+            else:
+                db.query("UPDATE categories SET name=%s WHERE id=%s", (name, category_id), commit=True)
+        except Exception as e:
+            flash(f"อัปโหลดรูปไม่สำเร็จ: {e}", "danger")
+            return redirect(url_for("admin.categories"))
+    else:
+        db.query("UPDATE categories SET name=%s WHERE id=%s", (name, category_id), commit=True)
+    flash("บันทึกหมวดหมู่แล้ว", "success")
+    return redirect(url_for("admin.categories"))
+
+
 @bp.route("/categories/delete/<int:category_id>", methods=["POST"])
 @admin_required
 def delete_category(category_id):
@@ -122,13 +149,14 @@ def delete_category(category_id):
 @admin_required
 def products():
     rows = db.query(
-        """SELECT p.id, p.name, p.price, p.stock, p.is_preorder, p.image_url,
-                  c.name AS category_name
+        """SELECT p.id, p.name, p.description, p.price, p.stock, p.is_preorder,
+                  p.image_url, p.badge_text, p.category_id, c.name AS category_name
            FROM products p LEFT JOIN categories c ON p.category_id = c.id
            ORDER BY p.created_at DESC""",
         fetchall=True,
     )
-    return render_template("admin/products.html", products=rows)
+    categories = db.query("SELECT id, name FROM categories ORDER BY name", fetchall=True)
+    return render_template("admin/products.html", products=rows, categories=categories)
 
 
 @bp.route("/products/new", methods=["GET", "POST"])
@@ -155,9 +183,17 @@ def edit_product(product_id):
 
     if request.method == "POST":
         result = _save_product_form(product_id)
+        is_ajax = request.headers.get("X-Requested-With") == "fetch"
         if result is True:
+            if is_ajax:
+                from flask import jsonify
+                return jsonify({"ok": True})
             flash("บันทึกการแก้ไขแล้ว", "success")
             return redirect(url_for("admin.products"))
+        # error
+        if is_ajax:
+            from flask import jsonify
+            return jsonify({"ok": False, "error": result}), 400
         flash(result, "danger")
         product = db.query("SELECT * FROM products WHERE id = %s", (product_id,), fetchone=True)
 
@@ -219,6 +255,44 @@ def _save_product_form(product_id):
                 commit=True,
             )
     return True
+
+
+@bp.route("/products/bulk-update", methods=["POST"])
+@admin_required
+def bulk_update_products():
+    """
+    แก้ไขสินค้าหลายรายการพร้อมกันจากในตาราง (ชื่อ/ราคา/สต็อก/ประเภท)
+    form ส่งมาเป็น array: id[], name[], price[], stock[], is_preorder (checkbox ต่อ id)
+    """
+    ids = request.form.getlist("id")
+    updated = 0
+    errors = 0
+    for pid in ids:
+        try:
+            name = (request.form.get("name_%s" % pid) or "").strip()
+            price_raw = request.form.get("price_%s" % pid) or "0"
+            stock = request.form.get("stock_%s" % pid, type=int)
+            is_preorder = request.form.get("preorder_%s" % pid) == "on"
+            if not name:
+                errors += 1
+                continue
+            price = Decimal(price_raw)
+            if price < 0 or stock is None or stock < 0:
+                errors += 1
+                continue
+            db.query(
+                "UPDATE products SET name=%s, price=%s, stock=%s, is_preorder=%s WHERE id=%s",
+                (name, price, stock, is_preorder, int(pid)),
+                commit=True,
+            )
+            updated += 1
+        except (InvalidOperation, ValueError, TypeError):
+            errors += 1
+    if updated:
+        flash("บันทึก %d รายการแล้ว" % updated + ("" if not errors else " (ข้าม %d รายการที่ข้อมูลไม่ถูกต้อง)" % errors), "success")
+    elif errors:
+        flash("ไม่สามารถบันทึกได้ ข้อมูลบางรายการไม่ถูกต้อง", "danger")
+    return redirect(url_for("admin.products"))
 
 
 @bp.route("/products/stock/<int:product_id>", methods=["POST"])

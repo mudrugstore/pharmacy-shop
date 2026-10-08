@@ -5,10 +5,20 @@
 {% include "admin/_nav.html" %}
 
 <div class="stat-grid">
-    <div class="stat-card"><div class="stat-num">{{ stats.products }}</div><div class="stat-label">สินค้าทั้งหมด</div></div>
-    <div class="stat-card"><div class="stat-num">{{ stats.categories }}</div><div class="stat-label">หมวดหมู่</div></div>
-    <div class="stat-card"><div class="stat-num">{{ stats.orders }}</div><div class="stat-label">คำสั่งซื้อ</div></div>
-    <div class="stat-card"><div class="stat-num">{{ stats.preorders }}</div><div class="stat-label">พรีออเดอร์รอติดต่อ</div></div>
-    <div class="stat-card"><div class="stat-num">{{ stats.users }}</div><div class="stat-label">ผู้ใช้</div></div>
+    <a href="{{ url_for('admin.products') }}" class="stat-card">
+        <div class="stat-num">{{ stats.products }}</div><div class="stat-label">สินค้าทั้งหมด</div>
+    </a>
+    <a href="{{ url_for('admin.categories') }}" class="stat-card">
+        <div class="stat-num">{{ stats.categories }}</div><div class="stat-label">หมวดหมู่</div>
+    </a>
+    <a href="{{ url_for('admin.orders') }}" class="stat-card">
+        <div class="stat-num">{{ stats.orders }}</div><div class="stat-label">คำสั่งซื้อ</div>
+    </a>
+    <a href="{{ url_for('admin.preorders') }}" class="stat-card">
+        <div class="stat-num">{{ stats.preorders }}</div><div class="stat-label">พรีออเดอร์รอติดต่อ</div>
+    </a>
+    <a href="{{ url_for('admin.users') }}" class="stat-card">
+        <div class="stat-num">{{ stats.users }}</div><div class="stat-label">ผู้ใช้</div>
+    </a>
 </div>
 {% endblock %}

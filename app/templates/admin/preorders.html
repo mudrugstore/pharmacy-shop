@@ -17,9 +17,16 @@
                 <td data-label="จำนวน">{{ r.quantity }}</td>
                 <td data-label="วันที่">{{ r.created_at|thaidt }}</td>
                 <td data-label="สถานะ">
+                    {% if r.status == 'ยกเลิกโดยลูกค้า' %}
+                        <span class="pill pill-danger" style="margin-bottom:6px;display:inline-block;">ยกเลิกโดยลูกค้า</span>
+                    {% endif %}
                     <form method="post" action="{{ url_for('admin.preorder_status', request_id=r.id) }}" class="row-actions">
                         <select name="status">
-                            {% for s in ['รอติดต่อกลับ', 'ติดต่อแล้ว', 'ยืนยันแล้ว', 'ยกเลิก'] %}
+                            {% set pstatuses = ['รอติดต่อกลับ', 'ติดต่อแล้ว', 'ยืนยันแล้ว', 'ยกเลิก'] %}
+                            {% if r.status not in pstatuses %}
+                                <option value="{{ r.status }}" selected>{{ r.status }}</option>
+                            {% endif %}
+                            {% for s in pstatuses %}
                                 <option value="{{ s }}" {% if r.status == s %}selected{% endif %}>{{ s }}</option>
                             {% endfor %}
                         </select>

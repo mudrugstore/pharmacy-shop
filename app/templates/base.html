@@ -28,6 +28,8 @@
 <body data-logged-in="{{ '1' if current_user and not current_user.is_admin else '0' }}"
       data-login-url="{{ url_for('auth.login') }}">
 
+<!-- toast แจ้งเตือน (เช่น เพิ่มลงตะกร้าแล้ว) -->
+<div id="toast" class="toast"></div>
 <!-- แถบความคืบหน้าด้านบน + overlay spinner ตอนเปลี่ยนหน้า -->
 <div id="pageProgress" class="page-progress"></div>
 <div id="pageLoader" class="page-loader" aria-hidden="true">
@@ -53,8 +55,8 @@
             </form>
             <div class="top-actions">
                 {% if current_user and not current_user.is_admin %}
-                    <a href="{{ url_for('shop.cart') }}" class="cart-link" title="ตะกร้า">
-                        &#128722;{% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
+                    <a href="{{ url_for('shop.cart') }}" class="cart-link" title="ตะกร้า" id="cartLink">
+                        &#128722;<span class="cart-badge" id="cartBadge" {% if not cart_count %}style="display:none;"{% endif %}>{{ cart_count or 0 }}</span>
                     </a>
                 {% endif %}
                 {% if current_user %}
@@ -184,14 +186,101 @@ document.addEventListener("click", function (e) {
         showLoader();
     });
 
-    // submit form (ค้นหา/สั่งซื้อ/บันทึก)
-    document.addEventListener("submit", function () { showLoader(); });
+    // submit form (ค้นหา/สั่งซื้อ/บันทึก) — ข้ามฟอร์มที่เป็น AJAX (จัดการ loading เอง)
+    document.addEventListener("submit", function (e) {
+        var f = e.target;
+        if (!f || !f.classList) return;
+        if (f.hasAttribute("data-ajax")) return;        // ฟอร์ม AJAX ทั่วไป
+        if (f.classList.contains("js-add-cart")) return; // ฟอร์มเพิ่มตะกร้า (AJAX)
+        showLoader();
+    });
 
     // ซ่อน loader เมื่อหน้าใหม่โหลดเสร็จ หรือกดปุ่ม back (รองรับ bfcache ของมือถือ)
     window.addEventListener("pageshow", hideLoader);
     window.addEventListener("load", hideLoader);
     document.addEventListener("visibilitychange", function () {
         if (document.visibilityState === "visible") hideLoader();
+    });
+})();
+
+// ===== เพิ่มลงตะกร้าแบบ AJAX + animation + toast (ไม่เปลี่ยนหน้า) =====
+(function () {
+    var badge = document.getElementById("cartBadge");
+    var cartLink = document.getElementById("cartLink");
+    var toast = document.getElementById("toast");
+    var toastTimer;
+
+    function showToast(msg, ok) {
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.className = "toast show" + (ok ? "" : " toast-err");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toast.className = "toast"; }, 1800);
+    }
+    function bumpCart(count) {
+        if (badge) {
+            badge.textContent = count;
+            badge.style.display = count > 0 ? "" : "none";
+        }
+        if (cartLink) {
+            cartLink.classList.remove("cart-bump");
+            void cartLink.offsetWidth;   // reflow เพื่อ replay animation
+            cartLink.classList.add("cart-bump");
+        }
+    }
+    // รูปบินเข้าตะกร้า (ถ้ามี element รูปต้นทาง)
+    function flyToCart(fromImg) {
+        if (!fromImg || !cartLink) return;
+        var s = fromImg.getBoundingClientRect();
+        var t = cartLink.getBoundingClientRect();
+        var fly = document.createElement("img");
+        fly.src = fromImg.src;
+        fly.className = "fly-img";
+        fly.style.left = s.left + "px"; fly.style.top = s.top + "px";
+        fly.style.width = s.width + "px"; fly.style.height = s.height + "px";
+        document.body.appendChild(fly);
+        requestAnimationFrame(function () {
+            fly.style.left = (t.left + t.width / 2) + "px";
+            fly.style.top = (t.top + t.height / 2) + "px";
+            fly.style.width = "20px"; fly.style.height = "20px"; fly.style.opacity = "0.3";
+        });
+        setTimeout(function () { fly.remove(); }, 650);
+    }
+
+    function closeProductModal() {
+        var m = document.getElementById("productModal");
+        if (m && m.classList.contains("show")) {
+            m.classList.remove("show");
+            document.body.style.overflow = "";
+        }
+    }
+
+    document.addEventListener("submit", function (e) {
+        var form = e.target;
+        if (!form.classList || !form.classList.contains("js-add-cart")) return;
+        e.preventDefault();
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn && btn.disabled) return;   // กันกดซ้ำระหว่างรอ
+
+        // จับตำแหน่งรูปต้นทาง "ก่อน" ปิด popup (ไม่งั้นรูปหายก่อนคำนวณ)
+        var img = form.getAttribute("data-img");
+        var imgEl = img ? document.querySelector(img) : null;
+        flyToCart(imgEl);          // เริ่ม animation ทันที (ไม่รอ server)
+        closeProductModal();       // ปิด popup ทันที ให้เลือกสินค้าอื่นต่อได้เลย
+
+        if (btn) btn.disabled = true;
+        fetch(form.action, { method: "POST", body: new FormData(form), headers: { "X-Requested-With": "fetch" } })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (res) {
+                if (res.ok && res.j.ok) {
+                    bumpCart(res.j.cart_count);
+                    showToast("เพิ่มลงตะกร้าแล้ว", true);
+                } else {
+                    showToast((res.j && res.j.error) || "เพิ่มไม่สำเร็จ", false);
+                }
+            })
+            .catch(function () { showToast("เกิดข้อผิดพลาด", false); })
+            .finally(function () { if (btn) btn.disabled = false; });
     });
 })();
 </script>
