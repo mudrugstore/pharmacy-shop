@@ -1,80 +1,88 @@
-"""จัดการการเชื่อมต่อฐานข้อมูล PostgreSQL (Supabase) ด้วย psycopg v3 + connection pool"""
+"""
+จัดการการเชื่อมต่อฐานข้อมูล PostgreSQL (Supabase) ด้วย psycopg v3
+
+หมายเหตุสำคัญ: ใช้กับ Supabase Transaction Pooler (port 6543) ซึ่งทำหน้าที่ pool
+connection ให้ฝั่งเซิร์ฟเวอร์อยู่แล้ว เราจึง "ไม่ pool ซ้ำ" ที่ฝั่ง client แต่เปิด
+connection ใหม่ต่อ request แล้วปิดทันที (เหมาะกับ transaction pooler ที่สุด)
+และปิด prepared statements (prepare_threshold=None) เพราะ transaction pooler
+ไม่รองรับ prepared statements
+"""
 from contextlib import contextmanager
-from psycopg_pool import ConnectionPool
+import psycopg
 from psycopg.rows import dict_row
 
-_pool = None
+_database_url = None
 
 
 def init_pool(database_url):
-    """สร้าง connection pool ตอนแอปเริ่มทำงาน"""
-    global _pool
-    if _pool is None:
-        if not database_url:
-            raise RuntimeError("DATABASE_URL ยังไม่ได้ตั้งค่า กรุณาตั้งใน .env")
-        # ตั้งค่าให้เหมาะกับ Supabase free tier (Transaction pooler port 6543):
-        # - min_size=0: ไม่ถือ connection ค้างตอน idle (Supabase pooler ตัด idle connection
-        #   เงียบๆ การถือค้างทำให้ pool แจก connection ตายแล้ว query พัง)
-        # - max_size เล็ก: Supabase free จำกัด connection รวม ห้ามถือเยอะ
-        # - max_lifetime สั้น: รีไซเคิล connection บ่อย กัน connection ตายจาก pooler
-        # - max_idle สั้น: คืน connection ที่ว่างเร็ว
-        # - timeout: รอ connection ไม่เกิน 10 วิ (ถ้าเกินค่อย error เร็วๆ ไม่ค้าง 30 วิ)
-        # ไม่ใช้ check เพราะทำให้ pool พยายาม validate ทุก connection พร้อมกันตอน
-        #   pooler ตัด connection → สร้างใหม่ไม่ทัน → PoolTimeout; ใช้ retry ใน query() แทน
-        _pool = ConnectionPool(
-            conninfo=database_url,
-            min_size=0,
-            max_size=4,
-            max_idle=30,
-            max_lifetime=600,
-            timeout=10,
-            reconnect_timeout=10,
-            open=True,
-            kwargs={"row_factory": dict_row},
-        )
-    return _pool
+    """เก็บ connection string ไว้ใช้ (ชื่อฟังก์ชันคงเดิมเพื่อความเข้ากันได้)"""
+    global _database_url
+    if not database_url:
+        raise RuntimeError("DATABASE_URL ยังไม่ได้ตั้งค่า กรุณาตั้งใน .env")
+    _database_url = database_url
+
+
+def _connect():
+    """เปิด connection ใหม่ไปยัง Supabase (ปิด prepared statements สำหรับ transaction pooler)"""
+    return psycopg.connect(
+        _database_url,
+        row_factory=dict_row,
+        prepare_threshold=None,   # ต้องปิด: transaction pooler ไม่รองรับ prepared statements
+        connect_timeout=15,
+        autocommit=False,
+    )
 
 
 @contextmanager
 def get_conn():
-    """ยืม connection จาก pool แล้วคืนให้อัตโนมัติเมื่อใช้เสร็จ"""
-    if _pool is None:
-        raise RuntimeError("connection pool ยังไม่ถูกสร้าง เรียก init_pool() ก่อน")
-    with _pool.connection() as conn:
+    """เปิด connection ต่อการใช้งาน แล้วปิดอัตโนมัติเมื่อเสร็จ"""
+    if _database_url is None:
+        raise RuntimeError("ยังไม่ได้ตั้งค่า DATABASE_URL เรียก init_pool() ก่อน")
+    conn = _connect()
+    try:
         yield conn
+    finally:
+        conn.close()
 
 
 def query(sql, params=None, fetchone=False, fetchall=False, commit=False):
     """
-    ฟังก์ชันกลางสำหรับรันคำสั่ง SQL
+    ฟังก์ชันกลางสำหรับรันคำสั่ง SQL (เปิด connection ใหม่ต่อ query)
     - fetchone: คืนแถวเดียว (dict) หรือ None
     - fetchall: คืนทุกแถว (list ของ dict)
-    - commit: psycopg v3 จะ commit อัตโนมัติเมื่อออกจาก context (ไม่มี error)
-      พารามิเตอร์ commit คงไว้เพื่อความชัดเจนของเจตนาเท่านั้น
-
-    มี retry ถ้าเจอ connection error หรือ pool หยิบ connection ไม่ได้ (เช่น Supabase
-    pooler ตัด connection ที่ค้างอยู่) โดยลองใหม่พร้อมหน่วงเล็กน้อยให้ pool สร้าง
-    connection ใหม่ทัน
+    มี retry ถ้าเจอ connection error (เช่น pooler ตัด connection ชั่วคราว)
     """
     import time
-    import psycopg
-    from psycopg_pool import PoolTimeout
 
     attempts = 3
     for i in range(attempts):
+        conn = None
         try:
-            with get_conn() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(sql, params or ())
-                    if fetchone:
-                        return cur.fetchone()
-                    if fetchall:
-                        return cur.fetchall()
-                    return None
-        except (psycopg.OperationalError, psycopg.InterfaceError, PoolTimeout):
+            conn = _connect()
+            with conn.cursor() as cur:
+                cur.execute(sql, params or ())
+                result = None
+                if fetchone:
+                    result = cur.fetchone()
+                elif fetchall:
+                    result = cur.fetchall()
+            conn.commit()
+            return result
+        except (psycopg.OperationalError, psycopg.InterfaceError):
+            if conn is not None:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
             if i == attempts - 1:
                 raise
-            time.sleep(0.5 * (i + 1))  # หน่วงเพิ่มขึ้นก่อนลองใหม่ (0.5s, 1s)
+            time.sleep(0.5 * (i + 1))
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
 
 def init_schema():
@@ -167,3 +175,4 @@ def init_schema():
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(schema_sql)
+        conn.commit()
