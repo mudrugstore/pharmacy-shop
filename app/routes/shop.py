@@ -316,3 +316,12 @@ def order_detail(order_id):
 def help_page():
     """หน้าคู่มือการใช้งาน แสดงเนื้อหาตาม role ของผู้ใช้"""
     return render_template("shop/help.html")
+
+
+@bp.route("/healthz")
+def healthz():
+    """
+    Health check เบาๆ สำหรับ UptimeRobot ping กัน Render หลับ
+    ตอบเร็ว ไม่แตะฐานข้อมูล (ไม่เปลือง connection/quota ของ Supabase)
+    """
+    return "ok", 200
