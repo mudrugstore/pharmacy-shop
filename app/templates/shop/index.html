@@ -24,81 +24,64 @@
     </div>
 </div>
 
-{# โครง skeleton แสดงระหว่างรอโหลดหน้าใหม่ตอนเปลี่ยนหมวดหมู่ (ซ่อนไว้ก่อน) #}
-<div class="grid" id="skeletonGrid" style="display:none;">
-    {% for _ in range(8) %}
-    <div class="skeleton-card">
-        <div class="sk-img skeleton"></div>
-        <div class="sk-body">
-            <div class="sk-line skeleton"></div>
-            <div class="sk-line short skeleton"></div>
+{# บล็อกรายการสินค้า โหลดใหม่เฉพาะส่วนนี้ตอนเปลี่ยนหมวดหมู่ (AJAX) #}
+<div id="productBlock" data-nav-skip>
+    {% include "shop/_product_grid.html" %}
+</div>
+
+{# โครง skeleton สำหรับแสดงในบล็อกสินค้าระหว่างโหลด (ซ่อนไว้ก่อน) #}
+<template id="skeletonTpl">
+    <div class="grid">
+        {% for _ in range(8) %}
+        <div class="skeleton-card">
+            <div class="sk-img skeleton"></div>
+            <div class="sk-body">
+                <div class="sk-line skeleton"></div>
+                <div class="sk-line short skeleton"></div>
+            </div>
         </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>
-
-{% if search_query %}
-<p class="muted" style="margin-bottom:14px;">ผลการค้นหา "<strong>{{ search_query }}</strong>" พบ {{ products|length }} รายการ</p>
-{% else %}
-<div class="section-bar">
-    <span class="section-bar-title">สินค้าแนะนำ</span>
-</div>
-{% endif %}
-
-{% if products %}
-<div class="grid" id="productGrid">
-    {% for p in products %}
-    <div class="card">
-        {% if p.stock <= 0 %}
-            <span class="badge-corner badge-soldout">สินค้าหมด</span>
-        {% else %}
-            <span class="badge-corner">ยา</span>
-        {% endif %}
-        <a href="{{ url_for('shop.product_detail', product_id=p.id) }}" class="card-link">
-            <div class="card-img-wrap">
-                {% if p.image_url %}
-                    <img src="{{ p.image_url }}" alt="{{ p.name }}" class="card-img">
-                {% else %}
-                    <div class="card-img-placeholder">&#128138;</div>
-                {% endif %}
-            </div>
-            <div class="card-body">
-                <div class="card-title">{{ p.name }}</div>
-                <div class="card-price"><span class="cur">฿</span>{{ "%.0f"|format(p.price) if p.price == p.price|round(0) else "%.2f"|format(p.price) }}</div>
-                <div class="card-meta">
-                    <span class="card-cat">{{ p.category_name or 'ทั่วไป' }}</span>
-                    {% if p.stock > 0 %}
-                        <span class="stock-ok">เหลือ {{ p.stock }}</span>
-                    {% else %}
-                        <span class="stock-out">หมด</span>
-                    {% endif %}
-                </div>
-            </div>
-        </a>
-    </div>
-    {% endfor %}
-</div>
-{% else %}
-<p class="muted">
-    {% if search_query %}ไม่พบสินค้าที่ค้นหา{% else %}ยังไม่มีสินค้าในหมวดนี้{% endif %}
-</p>
-{% endif %}
+</template>
 
 <script>
-// ตอนคลิกเปลี่ยนหมวดหมู่: แสดง skeleton แทนสินค้าทันที (feedback เร็ว ระหว่างรอหน้าใหม่โหลด)
+// เปลี่ยนหมวดหมู่แบบ AJAX: โหลดเฉพาะบล็อกรายการสินค้า + แสดง skeleton เฉพาะในบล็อกนั้น
 (function () {
-    var cats = document.querySelectorAll(".js-cat");
-    var skel = document.getElementById("skeletonGrid");
-    var grid = document.getElementById("productGrid");
-    if (!cats.length || !skel) return;
-    cats.forEach(function (a) {
-        a.addEventListener("click", function () {
-            if (grid) grid.style.display = "none";
-            var bar = document.querySelector(".section-bar");
-            if (bar) bar.style.display = "none";
-            var emptyMsg = document.querySelector("main .muted");
-            skel.style.display = "grid";
+    var block = document.getElementById("productBlock");
+    var tpl = document.getElementById("skeletonTpl");
+    if (!block || !tpl) return;
+
+    function loadCategory(url, push) {
+        // แสดง skeleton เฉพาะในบล็อกสินค้า (ไม่กระทบแถบค้นหา/หมวดหมู่ด้านบน)
+        block.innerHTML = tpl.innerHTML;
+        fetch(url, { headers: { "X-Requested-With": "fetch" } })
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                block.innerHTML = html;
+                if (push) history.pushState({ url: url }, "", url);
+            })
+            .catch(function () {
+                // ถ้า AJAX พลาด ให้โหลดหน้าปกติแทน
+                window.location.href = url;
+            });
+    }
+
+    // ดักคลิกหมวดหมู่
+    document.querySelectorAll(".js-cat").forEach(function (a) {
+        a.addEventListener("click", function (e) {
+            e.preventDefault();
+            // อัปเดตสถานะ active ของปุ่มหมวดหมู่
+            document.querySelectorAll(".js-cat").forEach(function (x) { x.classList.remove("active"); });
+            a.classList.add("active");
+            loadCategory(a.getAttribute("href"), true);
+            // เลื่อนขึ้นไปที่บล็อกสินค้าเล็กน้อยให้เห็น skeleton
+            block.scrollIntoView({ behavior: "smooth", block: "nearest" });
         });
+    });
+
+    // รองรับปุ่ม back/forward ของเบราว์เซอร์
+    window.addEventListener("popstate", function () {
+        loadCategory(window.location.href, false);
     });
 })();
 </script>

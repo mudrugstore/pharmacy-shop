@@ -45,6 +45,14 @@ def index():
     )
     products = db.query(sql, tuple(params), fetchall=True)
 
+    # ถ้าเป็น request แบบ AJAX (เปลี่ยนหมวดหมู่) คืนเฉพาะบล็อกรายการสินค้า ไม่โหลดทั้งหน้า
+    if request.headers.get("X-Requested-With") == "fetch":
+        return render_template(
+            "shop/_product_grid.html",
+            products=products,
+            search_query=q,
+        )
+
     # แบนเนอร์โฆษณา (แสดงเฉพาะหน้าแรก ไม่แสดงตอนค้นหา/กรองหมวด)
     # เลือกเฉพาะแบนเนอร์ที่ตั้งให้แสดงหน้าสินค้า ('shop') หรือทั้งสอง ('both')
     banners = []

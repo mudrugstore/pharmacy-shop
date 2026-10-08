@@ -163,6 +163,7 @@ document.addEventListener("click", function (e) {
     document.addEventListener("click", function (e) {
         var a = e.target.closest("a");
         if (!a) return;
+        if (a.classList.contains("js-cat")) return;  // หมวดหมู่ใช้ AJAX ไม่ต้องขึ้น loader เต็มจอ
         var href = a.getAttribute("href") || "";
         if (!href || href.charAt(0) === "#") return;
         if (href.indexOf("javascript:") === 0) return;
