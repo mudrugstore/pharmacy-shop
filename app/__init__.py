@@ -95,8 +95,9 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_globals():
         s = settings.get_all()
+        user = get_current_user()
         return {
-            "current_user": get_current_user(),
+            "current_user": user,
             "store_name": s["store_name"],
             "store_phone": s["store_phone"],
             "store_address": s["store_address"],
@@ -107,9 +108,45 @@ def create_app(config_class=Config):
             "logo_url": s.get("logo_url") or "",
             "supabase_url": app.config.get("SUPABASE_URL") or "",
             "cart_count": _cart_count(),
+            "nav_badges": _nav_badges(user),
         }
 
     return app
+
+
+def _nav_badges(user):
+    """
+    นับ badge แจ้งเตือนสำหรับเมนู (query เดียวต่อ request เฉพาะเมื่อ login)
+    - admin: ออเดอร์รอดำเนินการ + พรีออเดอร์รอติดต่อกลับ
+    - user:  ออเดอร์/พรีออเดอร์ที่ admin อัปเดตสถานะแต่ยังไม่เห็น (seen_by_user=FALSE)
+    """
+    from app import db
+    badges = {"admin_orders": 0, "admin_preorders": 0, "my_orders": 0, "my_preorders": 0}
+    if not user:
+        return badges
+    try:
+        if user["is_admin"]:
+            row = db.query(
+                "SELECT "
+                "(SELECT COUNT(*) FROM orders WHERE status = 'รอดำเนินการ') AS o, "
+                "(SELECT COUNT(*) FROM preorder_requests WHERE status = 'รอติดต่อกลับ') AS p",
+                fetchone=True,
+            )
+            badges["admin_orders"] = row["o"]
+            badges["admin_preorders"] = row["p"]
+        else:
+            row = db.query(
+                "SELECT "
+                "(SELECT COUNT(*) FROM orders WHERE user_id = %s AND seen_by_user = FALSE) AS o, "
+                "(SELECT COUNT(*) FROM preorder_requests WHERE user_id = %s AND seen_by_user = FALSE) AS p",
+                (user["id"], user["id"]),
+                fetchone=True,
+            )
+            badges["my_orders"] = row["o"]
+            badges["my_preorders"] = row["p"]
+    except Exception:
+        pass  # กันกรณี DB มีปัญหาชั่วคราว ไม่ให้ทั้งหน้าพัง
+    return badges
 
 
 def _cart_count():

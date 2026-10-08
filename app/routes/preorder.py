@@ -67,6 +67,9 @@ def my_requests():
         (user["id"],),
         fetchall=True,
     )
+    # เคลียร์ badge: ถือว่าลูกค้าเห็นการอัปเดตแล้ว
+    db.query("UPDATE preorder_requests SET seen_by_user = TRUE WHERE user_id = %s AND seen_by_user = FALSE",
+             (user["id"],), commit=True)
     return render_template("preorder/my_requests.html", requests=rows)
 
 

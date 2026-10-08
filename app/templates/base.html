@@ -74,11 +74,12 @@
             <a href="{{ url_for('shop.index') }}">สินค้าทั้งหมด</a>
             <a href="{{ url_for('preorder.index') }}">พรีออเดอร์</a>
             {% if current_user and not current_user.is_admin %}
-                <a href="{{ url_for('shop.orders') }}">คำสั่งซื้อของฉัน</a>
-                <a href="{{ url_for('preorder.my_requests') }}">พรีออเดอร์ของฉัน</a>
+                <a href="{{ url_for('shop.orders') }}">คำสั่งซื้อของฉัน{% if nav_badges.my_orders %}<span class="nav-badge">{{ nav_badges.my_orders }}</span>{% endif %}</a>
+                <a href="{{ url_for('preorder.my_requests') }}">พรีออเดอร์ของฉัน{% if nav_badges.my_preorders %}<span class="nav-badge">{{ nav_badges.my_preorders }}</span>{% endif %}</a>
             {% endif %}
             {% if current_user and current_user.is_admin %}
-                <a href="{{ url_for('admin.dashboard') }}">แผงแอดมิน</a>
+                {% set admin_total = nav_badges.admin_orders + nav_badges.admin_preorders %}
+                <a href="{{ url_for('admin.dashboard') }}">แผงแอดมิน{% if admin_total %}<span class="nav-badge">{{ admin_total }}</span>{% endif %}</a>
             {% endif %}
             <a href="{{ url_for('shop.help_page') }}">ช่วยเหลือ</a>
             <span class="spacer"></span>

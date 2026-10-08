@@ -333,8 +333,14 @@ def orders():
 def order_detail(order_id):
     if request.method == "POST":
         status = (request.form.get("status") or "").strip()
-        if status:
-            db.query("UPDATE orders SET status = %s WHERE id = %s", (status, order_id), commit=True)
+        # ตรวจสถานะปัจจุบันก่อน — ถ้าลูกค้ายกเลิกแล้ว ห้ามแก้
+        current = db.query("SELECT status FROM orders WHERE id = %s", (order_id,), fetchone=True)
+        if current and current["status"] == "ยกเลิกโดยลูกค้า":
+            flash("คำสั่งซื้อนี้ถูกยกเลิกโดยลูกค้าแล้ว ไม่สามารถเปลี่ยนสถานะได้", "warning")
+        elif status:
+            # ตั้ง seen_by_user=FALSE เพื่อแจ้งลูกค้าว่ามีการอัปเดตสถานะ (badge)
+            db.query("UPDATE orders SET status = %s, seen_by_user = FALSE WHERE id = %s",
+                     (status, order_id), commit=True)
             flash("อัปเดตสถานะคำสั่งซื้อแล้ว", "success")
         return redirect(url_for("admin.order_detail", order_id=order_id))
 
@@ -375,9 +381,12 @@ def preorders():
 @admin_required
 def preorder_status(request_id):
     status = (request.form.get("status") or "").strip()
-    if status:
+    current = db.query("SELECT status FROM preorder_requests WHERE id = %s", (request_id,), fetchone=True)
+    if current and current["status"] == "ยกเลิกโดยลูกค้า":
+        flash("พรีออเดอร์นี้ถูกยกเลิกโดยลูกค้าแล้ว ไม่สามารถเปลี่ยนสถานะได้", "warning")
+    elif status:
         db.query(
-            "UPDATE preorder_requests SET status = %s WHERE id = %s",
+            "UPDATE preorder_requests SET status = %s, seen_by_user = FALSE WHERE id = %s",
             (status, request_id),
             commit=True,
         )

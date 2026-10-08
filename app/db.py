@@ -234,6 +234,9 @@ def init_schema():
     ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
     ALTER TABLE banners ADD COLUMN IF NOT EXISTS display_page TEXT NOT NULL DEFAULT 'both';
     ALTER TABLE products ADD COLUMN IF NOT EXISTS badge_text TEXT DEFAULT '';
+    -- ติดตามว่าลูกค้าเห็นการอัปเดตสถานะล่าสุดหรือยัง (สำหรับ badge แจ้งเตือน)
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS seen_by_user BOOLEAN NOT NULL DEFAULT TRUE;
+    ALTER TABLE preorder_requests ADD COLUMN IF NOT EXISTS seen_by_user BOOLEAN NOT NULL DEFAULT TRUE;
     """
     with get_conn() as conn:
         with conn.cursor() as cur:

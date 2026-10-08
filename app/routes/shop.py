@@ -336,6 +336,9 @@ def orders():
         (user["id"],),
         fetchall=True,
     )
+    # เคลียร์ badge: ถือว่าลูกค้าเห็นการอัปเดตสถานะแล้ว
+    db.query("UPDATE orders SET seen_by_user = TRUE WHERE user_id = %s AND seen_by_user = FALSE",
+             (user["id"],), commit=True)
     return render_template("shop/orders.html", orders=rows)
 
 
