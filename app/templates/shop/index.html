@@ -7,12 +7,12 @@
 <div class="cat-strip">
     <div class="cat-strip-title">หมวดหมู่</div>
     <div class="cat-items">
-        <a href="{{ url_for('shop.index') }}" class="cat-item {% if not selected_category %}active{% endif %}">
+        <a href="{{ url_for('shop.index') }}" class="cat-item js-cat {% if not selected_category %}active{% endif %}">
             <span class="cat-icon">&#128138;</span><span class="cat-label">ทั้งหมด</span>
         </a>
         {% for c in categories %}
         <a href="{{ url_for('shop.index', category=c.id) }}"
-           class="cat-item {% if selected_category == c.id %}active{% endif %}">
+           class="cat-item js-cat {% if selected_category == c.id %}active{% endif %}">
             {% if c.image_url %}
                 <img src="{{ c.image_url }}" alt="{{ c.name }}" class="cat-icon-img">
             {% else %}
@@ -24,6 +24,19 @@
     </div>
 </div>
 
+{# โครง skeleton แสดงระหว่างรอโหลดหน้าใหม่ตอนเปลี่ยนหมวดหมู่ (ซ่อนไว้ก่อน) #}
+<div class="grid" id="skeletonGrid" style="display:none;">
+    {% for _ in range(8) %}
+    <div class="skeleton-card">
+        <div class="sk-img skeleton"></div>
+        <div class="sk-body">
+            <div class="sk-line skeleton"></div>
+            <div class="sk-line short skeleton"></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
 {% if search_query %}
 <p class="muted" style="margin-bottom:14px;">ผลการค้นหา "<strong>{{ search_query }}</strong>" พบ {{ products|length }} รายการ</p>
 {% else %}
@@ -33,7 +46,7 @@
 {% endif %}
 
 {% if products %}
-<div class="grid">
+<div class="grid" id="productGrid">
     {% for p in products %}
     <div class="card">
         {% if p.stock <= 0 %}
@@ -70,4 +83,23 @@
     {% if search_query %}ไม่พบสินค้าที่ค้นหา{% else %}ยังไม่มีสินค้าในหมวดนี้{% endif %}
 </p>
 {% endif %}
+
+<script>
+// ตอนคลิกเปลี่ยนหมวดหมู่: แสดง skeleton แทนสินค้าทันที (feedback เร็ว ระหว่างรอหน้าใหม่โหลด)
+(function () {
+    var cats = document.querySelectorAll(".js-cat");
+    var skel = document.getElementById("skeletonGrid");
+    var grid = document.getElementById("productGrid");
+    if (!cats.length || !skel) return;
+    cats.forEach(function (a) {
+        a.addEventListener("click", function () {
+            if (grid) grid.style.display = "none";
+            var bar = document.querySelector(".section-bar");
+            if (bar) bar.style.display = "none";
+            var emptyMsg = document.querySelector("main .muted");
+            skel.style.display = "grid";
+        });
+    });
+})();
+</script>
 {% endblock %}

@@ -36,11 +36,13 @@ a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: none; }
 
 /* ===== Header (2 ชั้นแบบ Shopee) ===== */
-/* ค้างบนสุดเวลา scroll */
+/* ค้างบนสุดเวลา scroll (ทำงานทั้ง desktop และ mobile) */
 body > header {
+    position: -webkit-sticky;
     position: sticky;
     top: 0;
     z-index: 100;
+    flex-shrink: 0;          /* กัน flex column บีบ header ทำให้ sticky เพี้ยนบนมือถือ */
     box-shadow: 0 2px 8px rgba(0,0,0,.08);
 }
 .topbar {

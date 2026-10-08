@@ -42,6 +42,9 @@ def create_app(config_class=Config):
     app.register_blueprint(preorder_bp)
     app.register_blueprint(admin_bp)
 
+    # ปิด DB connection ตอนจบแต่ละ request (reuse connection เดียวต่อ request เพื่อ performance)
+    app.teardown_appcontext(db.close_request_conn)
+
     # Jinja filter แปลงเวลาเป็นเวลาไทย เรียกใช้ใน template ว่า {{ dt|thaidt }}
     app.jinja_env.filters["thaidt"] = to_thai_time
 

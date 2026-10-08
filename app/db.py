@@ -33,32 +33,78 @@ def _connect():
     )
 
 
+def _request_conn():
+    """
+    คืน connection ที่ใช้ร่วมกันตลอด 1 request (เก็บใน Flask g) เพื่อ performance:
+    แทนที่จะเปิด connection ใหม่ทุก query (ช้าเพราะ TCP+TLS handshake กับ Supabase)
+    เราเปิดครั้งเดียวต่อ request แล้ว reuse จนจบ request จึงปิด (teardown)
+    ถ้าอยู่นอก request context (เช่นตอน startup) จะคืน None ให้เปิด connection ชั่วคราวแทน
+    """
+    try:
+        from flask import g, has_request_context
+    except Exception:
+        return None
+    if not has_request_context():
+        return None
+    conn = getattr(g, "_db_conn", None)
+    if conn is None or conn.closed:
+        conn = _connect()
+        g._db_conn = conn
+    return conn
+
+
+def close_request_conn(exc=None):
+    """ปิด connection ของ request ตอนจบ (เรียกจาก teardown_appcontext)"""
+    from flask import g
+    conn = getattr(g, "_db_conn", None)
+    if conn is not None:
+        try:
+            if exc is None:
+                conn.commit()
+            else:
+                conn.rollback()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+        g._db_conn = None
+
+
 @contextmanager
 def get_conn():
-    """เปิด connection ต่อการใช้งาน แล้วปิดอัตโนมัติเมื่อเสร็จ"""
+    """
+    คืน connection สำหรับใช้งาน (reuse ต่อ request ถ้าอยู่ใน request context
+    มิฉะนั้นเปิดชั่วคราว) ใช้สำหรับงานที่ต้องคุม transaction เอง เช่น checkout
+    """
     if _database_url is None:
         raise RuntimeError("ยังไม่ได้ตั้งค่า DATABASE_URL เรียก init_pool() ก่อน")
-    conn = _connect()
-    try:
-        yield conn
-    finally:
-        conn.close()
+    shared = _request_conn()
+    if shared is not None:
+        yield shared   # ไม่ปิดที่นี่ ปล่อยให้ teardown ปิดตอนจบ request
+    else:
+        conn = _connect()
+        try:
+            yield conn
+        finally:
+            conn.close()
 
 
 def query(sql, params=None, fetchone=False, fetchall=False, commit=False):
     """
-    ฟังก์ชันกลางสำหรับรันคำสั่ง SQL (เปิด connection ใหม่ต่อ query)
+    ฟังก์ชันกลางสำหรับรันคำสั่ง SQL
     - fetchone: คืนแถวเดียว (dict) หรือ None
     - fetchall: คืนทุกแถว (list ของ dict)
-    มี retry ถ้าเจอ connection error (เช่น pooler ตัด connection ชั่วคราว)
+    reuse connection เดียวต่อ request (เร็วขึ้น) และ retry ถ้า connection ถูกตัด
     """
     import time
 
     attempts = 3
     for i in range(attempts):
-        conn = None
+        shared = _request_conn()
+        conn = shared if shared is not None else _connect()
         try:
-            conn = _connect()
             with conn.cursor() as cur:
                 cur.execute(sql, params or ())
                 result = None
@@ -66,19 +112,32 @@ def query(sql, params=None, fetchone=False, fetchall=False, commit=False):
                     result = cur.fetchone()
                 elif fetchall:
                     result = cur.fetchall()
-            conn.commit()
+            if shared is None:
+                conn.commit()
             return result
         except (psycopg.OperationalError, psycopg.InterfaceError):
-            if conn is not None:
+            # connection เสีย: ปิดทิ้งแล้วลองใหม่ด้วย connection ใหม่
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            if shared is not None:
                 try:
-                    conn.rollback()
+                    conn.close()
+                except Exception:
+                    pass
+                from flask import g
+                g._db_conn = None
+            else:
+                try:
+                    conn.close()
                 except Exception:
                     pass
             if i == attempts - 1:
                 raise
             time.sleep(0.5 * (i + 1))
         finally:
-            if conn is not None:
+            if shared is None and not conn.closed:
                 try:
                     conn.close()
                 except Exception:
