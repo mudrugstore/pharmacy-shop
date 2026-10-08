@@ -68,8 +68,8 @@ def _upload(file_storage, max_size):
 
 
 def upload_product_image(file_storage):
-    """อัปโหลดรูปสินค้า (ย่อด้านยาวสุดไม่เกิน 800px)"""
-    return _upload(file_storage, max_size=800)
+    """อัปโหลดรูปสินค้า (ย่อด้านยาวสุดไม่เกิน 600px เพียงพอกับการ์ด/หน้ารายละเอียด ประหยัดแบนด์วิดท์)"""
+    return _upload(file_storage, max_size=600)
 
 
 def upload_banner_image(file_storage):

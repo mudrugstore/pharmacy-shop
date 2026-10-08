@@ -1,6 +1,6 @@
 """App factory ของเว็บร้านขายยาออนไลน์"""
 from datetime import timezone, timedelta
-from flask import Flask
+from flask import Flask, request
 from werkzeug.security import generate_password_hash
 from config import Config
 from app import db
@@ -48,6 +48,30 @@ def create_app(config_class=Config):
     # ปิด DB connection ตอนจบแต่ละ request (reuse connection เดียวต่อ request เพื่อ performance)
     app.teardown_appcontext(db.close_request_conn)
 
+    # บีบอัด response ด้วย gzip (ลดขนาด HTML/CSS/JSON ที่ส่ง ~60-70% หน้าโหลดเร็วขึ้นบนมือถือ)
+    import gzip as _gzip
+
+    @app.after_request
+    def _compress(response):
+        accept = request.headers.get("Accept-Encoding", "")
+        if "gzip" not in accept.lower():
+            return response
+        # บีบเฉพาะ text ที่ใหญ่พอ และยังไม่ถูกบีบ
+        ctype = response.content_type or ""
+        compressible = ctype.startswith(("text/", "application/json", "application/javascript")) or "javascript" in ctype
+        if (not compressible or response.direct_passthrough
+                or response.status_code < 200 or response.status_code >= 300
+                or "Content-Encoding" in response.headers):
+            return response
+        data = response.get_data()
+        if len(data) < 500:   # ไฟล์เล็กไม่คุ้มบีบ
+            return response
+        response.set_data(_gzip.compress(data, 6))
+        response.headers["Content-Encoding"] = "gzip"
+        response.headers["Vary"] = "Accept-Encoding"
+        response.headers["Content-Length"] = len(response.get_data())
+        return response
+
     # Jinja filter แปลงเวลาเป็นเวลาไทย เรียกใช้ใน template ว่า {{ dt|thaidt }}
     app.jinja_env.filters["thaidt"] = to_thai_time
 
@@ -68,6 +92,7 @@ def create_app(config_class=Config):
             "preorder_message": s["preorder_message"],
             "theme_color": s.get("theme_color") or "#ee4d2d",
             "logo_url": s.get("logo_url") or "",
+            "supabase_url": app.config.get("SUPABASE_URL") or "",
             "cart_count": _cart_count(),
         }
 
