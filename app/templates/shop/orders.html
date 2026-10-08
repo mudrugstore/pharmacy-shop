@@ -11,7 +11,7 @@
             <tr>
                 <td data-label="เลขที่">#{{ o.id }}</td>
                 <td data-label="วันที่">{{ o.created_at|thaidt }}</td>
-                <td data-label="ยอดรวม">{{ "%.2f"|format(o.total) }} บาท</td>
+                <td data-label="ยอดรวม">{{ o.total|money }} บาท</td>
                 <td data-label="สถานะ">{{ o.status }}</td>
                 <td data-label=""><a href="{{ url_for('shop.order_detail', order_id=o.id) }}" class="btn-small">ดูรายละเอียด</a></td>
             </tr>

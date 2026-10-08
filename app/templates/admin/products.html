@@ -21,7 +21,7 @@
                 </td>
                 <td data-label="ชื่อ">{{ p.name }}</td>
                 <td data-label="หมวดหมู่">{{ p.category_name or '-' }}</td>
-                <td data-label="ราคา">{{ "%.2f"|format(p.price) }}</td>
+                <td data-label="ราคา">{{ p.price|money }}</td>
                 <td data-label="สต็อก">
                     <form method="post" action="{{ url_for('admin.update_stock', product_id=p.id) }}" class="row-actions">
                         <input type="number" name="stock" value="{{ p.stock }}" min="0" class="qty-input">

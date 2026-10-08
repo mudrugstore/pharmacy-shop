@@ -21,7 +21,7 @@
         {% endif %}
         <div class="card-body">
             <div class="card-title">{{ p.name }}</div>
-            <div class="card-price"><span class="cur">฿</span>{{ "%.2f"|format(p.price) }}</div>
+            <div class="card-price"><span class="cur">฿</span>{{ p.price|money }}</div>
             {% if current_user and not current_user.is_admin %}
             <form method="post" action="{{ url_for('preorder.make_request', product_id=p.id) }}" class="row-actions" style="margin-top:6px;">
                 <div class="qty-stepper">

@@ -19,6 +19,17 @@ def to_thai_time(value, fmt="%d/%m/%Y %H:%M"):
     return value.astimezone(THAI_TZ).strftime(fmt)
 
 
+def money(value):
+    """
+    format ตัวเลขเงินให้มีเครื่องหมายคั่นหลักพันและทศนิยม 2 ตำแหน่ง
+    เช่น 1350 -> '1,350.00', 1234.5 -> '1,234.50'
+    """
+    try:
+        return "{:,.2f}".format(float(value or 0))
+    except (TypeError, ValueError):
+        return "0.00"
+
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -74,6 +85,8 @@ def create_app(config_class=Config):
 
     # Jinja filter แปลงเวลาเป็นเวลาไทย เรียกใช้ใน template ว่า {{ dt|thaidt }}
     app.jinja_env.filters["thaidt"] = to_thai_time
+    # Jinja filter format เงินมีเครื่องหมายคั่นหลักพัน เรียกใช้ว่า {{ price|money }}
+    app.jinja_env.filters["money"] = money
 
     # ให้ template เข้าถึงข้อมูล user และข้อมูลร้านได้ทุกหน้า
     from app.auth_utils import get_current_user

@@ -13,7 +13,7 @@
     <div class="card js-product"
          data-id="{{ p.id }}"
          data-name="{{ p.name|e }}"
-         data-price="{{ '%.0f'|format(p.price) if p.price == p.price|round(0) else '%.2f'|format(p.price) }}"
+         data-price="{{ p.price|money }}"
          data-stock="{{ p.stock }}"
          data-category="{{ (p.category_name or 'ทั่วไป')|e }}"
          data-image="{{ p.image_url|e }}"
@@ -33,7 +33,7 @@
             </div>
             <div class="card-body">
                 <div class="card-title">{{ p.name }}</div>
-                <div class="card-price"><span class="cur">฿</span>{{ "%.0f"|format(p.price) if p.price == p.price|round(0) else "%.2f"|format(p.price) }}</div>
+                <div class="card-price"><span class="cur">฿</span>{{ p.price|money }}</div>
                 <div class="card-meta">
                     <span class="card-cat">{{ p.category_name or 'ทั่วไป' }}</span>
                     {% if p.stock > 0 %}

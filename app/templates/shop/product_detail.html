@@ -14,7 +14,7 @@
         <h1 style="font-size:1.5rem; margin:6px 0;">{{ product.name }}</h1>
 
         <div class="pd-price">
-            <span class="num"><span style="font-size:1.1rem;">฿</span>{{ "%.2f"|format(product.price) }}</span>
+            <span class="num"><span style="font-size:1.1rem;">฿</span>{{ product.price|money }}</span>
         </div>
 
         {% if product.stock > 0 %}

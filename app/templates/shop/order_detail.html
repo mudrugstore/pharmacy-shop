@@ -18,13 +18,13 @@
         {% for it in items %}
             <tr>
                 <td>{{ it.product_name }}</td>
-                <td>{{ "%.2f"|format(it.unit_price) }}</td>
+                <td>{{ it.unit_price|money }}</td>
                 <td>{{ it.quantity }}</td>
-                <td class="text-right">{{ "%.2f"|format(it.unit_price * it.quantity) }}</td>
+                <td class="text-right">{{ (it.unit_price * it.quantity)|money }}</td>
             </tr>
         {% endfor %}
         </tbody>
-        <tfoot><tr><th colspan="3" class="text-right">ยอดรวม</th><th class="text-right">{{ "%.2f"|format(order.total) }} บาท</th></tr></tfoot>
+        <tfoot><tr><th colspan="3" class="text-right">ยอดรวม</th><th class="text-right">{{ order.total|money }} บาท</th></tr></tfoot>
     </table>
 </div>
 <a href="{{ url_for('shop.orders') }}" class="muted" style="margin-top:12px;display:inline-block;">&larr; กลับไปรายการคำสั่งซื้อ</a>
