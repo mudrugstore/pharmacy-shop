@@ -175,6 +175,7 @@ def _save_product_form(product_id):
     stock = request.form.get("stock", type=int) or 0
     category_id = request.form.get("category_id", type=int)
     is_preorder = request.form.get("is_preorder") == "on"
+    badge_text = (request.form.get("badge_text") or "").strip()[:20]  # จำกัดความยาวป้าย
 
     if not name:
         return "กรุณากรอกชื่อสินค้า"
@@ -197,24 +198,24 @@ def _save_product_form(product_id):
     if product_id is None:
         db.query(
             """INSERT INTO products
-               (category_id, name, description, price, stock, image_url, is_preorder)
-               VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-            (category_id, name, description, price, stock, image_url or "", is_preorder),
+               (category_id, name, description, price, stock, image_url, is_preorder, badge_text)
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+            (category_id, name, description, price, stock, image_url or "", is_preorder, badge_text),
             commit=True,
         )
     else:
         if image_url is not None:
             db.query(
                 """UPDATE products SET category_id=%s, name=%s, description=%s,
-                   price=%s, stock=%s, image_url=%s, is_preorder=%s WHERE id=%s""",
-                (category_id, name, description, price, stock, image_url, is_preorder, product_id),
+                   price=%s, stock=%s, image_url=%s, is_preorder=%s, badge_text=%s WHERE id=%s""",
+                (category_id, name, description, price, stock, image_url, is_preorder, badge_text, product_id),
                 commit=True,
             )
         else:
             db.query(
                 """UPDATE products SET category_id=%s, name=%s, description=%s,
-                   price=%s, stock=%s, is_preorder=%s WHERE id=%s""",
-                (category_id, name, description, price, stock, is_preorder, product_id),
+                   price=%s, stock=%s, is_preorder=%s, badge_text=%s WHERE id=%s""",
+                (category_id, name, description, price, stock, is_preorder, badge_text, product_id),
                 commit=True,
             )
     return True

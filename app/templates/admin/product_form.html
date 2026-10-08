@@ -20,6 +20,13 @@
             </select>
         </div>
         <div class="form-group">
+            <label>ป้ายมุมการ์ด (ไม่เกิน 20 ตัวอักษร)</label>
+            <input type="text" name="badge_text" maxlength="20"
+                   value="{{ product.badge_text if product and product.badge_text else '' }}"
+                   placeholder="เช่น ยา, ใหม่, ลดราคา (เว้นว่าง = ไม่แสดงป้าย)">
+            <span class="muted" style="font-size:.82rem;">หมายเหตุ: ถ้าสินค้าหมดสต็อก ระบบจะแสดง "สินค้าหมด" แทนป้ายนี้โดยอัตโนมัติ</span>
+        </div>
+        <div class="form-group">
             <label>รายละเอียด</label>
             <textarea name="description">{{ product.description if product else '' }}</textarea>
         </div>

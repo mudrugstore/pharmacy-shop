@@ -174,6 +174,7 @@ def init_schema():
         image_url   TEXT DEFAULT '',
         is_preorder BOOLEAN NOT NULL DEFAULT FALSE,
         is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+        badge_text  TEXT DEFAULT '',
         created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
@@ -232,6 +233,7 @@ def init_schema():
     -- migration: เพิ่มคอลัมน์ให้ตารางเดิมที่สร้างไว้ก่อนหน้า (ปลอดภัย รันซ้ำได้)
     ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
     ALTER TABLE banners ADD COLUMN IF NOT EXISTS display_page TEXT NOT NULL DEFAULT 'both';
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS badge_text TEXT DEFAULT '';
     """
     with get_conn() as conn:
         with conn.cursor() as cur:

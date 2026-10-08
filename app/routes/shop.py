@@ -64,7 +64,7 @@ def index():
         params.extend([f"%{q}%", f"%{q}%"])
 
     sql = (
-        "SELECT p.id, p.name, p.description, p.price, p.stock, p.image_url, "
+        "SELECT p.id, p.name, p.description, p.price, p.stock, p.image_url, p.badge_text, "
         "c.name AS category_name "
         "FROM products p LEFT JOIN categories c ON p.category_id = c.id "
         f"WHERE {' AND '.join(where)} ORDER BY p.name"

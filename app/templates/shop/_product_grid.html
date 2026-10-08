@@ -20,8 +20,8 @@
          data-desc="{{ (p.description or '')|e }}">
         {% if p.stock <= 0 %}
             <span class="badge-corner badge-soldout">สินค้าหมด</span>
-        {% else %}
-            <span class="badge-corner">ยา</span>
+        {% elif p.badge_text %}
+            <span class="badge-corner">{{ p.badge_text }}</span>
         {% endif %}
         <a href="{{ url_for('shop.product_detail', product_id=p.id) }}" class="card-link js-product-open">
             <div class="card-img-wrap">
