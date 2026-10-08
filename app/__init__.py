@@ -42,6 +42,9 @@ def create_app(config_class=Config):
     app.register_blueprint(preorder_bp)
     app.register_blueprint(admin_bp)
 
+    # ให้ browser cache ไฟล์ static (CSS/JS) ได้นานขึ้น ลดการโหลดซ้ำทุกหน้า
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 60 * 60 * 24 * 7  # 7 วัน
+
     # ปิด DB connection ตอนจบแต่ละ request (reuse connection เดียวต่อ request เพื่อ performance)
     app.teardown_appcontext(db.close_request_conn)
 

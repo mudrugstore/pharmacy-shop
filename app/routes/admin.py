@@ -5,10 +5,22 @@ from flask import (
 )
 from app import db
 from app import settings as app_settings
+from app import cache
 from app.storage import upload_product_image, upload_banner_image
 from app.auth_utils import admin_required
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+
+@bp.after_request
+def _clear_cache_after_mutation(response):
+    """
+    หลังจาก admin ทำ POST (เพิ่ม/แก้/ลบ หมวดหมู่/สินค้า/แบนเนอร์/ตั้งค่า)
+    ล้าง cache ทั้งหมดเพื่อให้ฝั่งลูกค้าเห็นข้อมูลใหม่ทันที (ไม่ต้องรอ TTL หมด)
+    """
+    if request.method == "POST":
+        cache.invalidate()
+    return response
 
 
 @bp.route("/settings", methods=["GET", "POST"])

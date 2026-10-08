@@ -5,9 +5,33 @@ from flask import (
     url_for, flash, session,
 )
 from app import db
+from app import cache
 from app.auth_utils import login_required, get_current_user
 
 bp = Blueprint("shop", __name__)
+
+
+def _get_categories():
+    """ดึงหมวดหมู่ (cache 60 วิ เพราะเปลี่ยนนานๆ ครั้ง)"""
+    return cache.get_or_set(
+        "categories",
+        lambda: db.query("SELECT id, name, image_url FROM categories ORDER BY name", fetchall=True),
+        ttl=60,
+    )
+
+
+def _get_shop_banners():
+    """ดึงแบนเนอร์หน้าสินค้า (cache 60 วิ)"""
+    return cache.get_or_set(
+        "banners_shop",
+        lambda: db.query(
+            "SELECT image_url, link_url FROM banners "
+            "WHERE is_active = TRUE AND display_page IN ('shop', 'both') "
+            "ORDER BY sort_order, id",
+            fetchall=True,
+        ),
+        ttl=60,
+    )
 
 
 def _get_cart():
@@ -25,7 +49,9 @@ def index():
     """หน้าร้าน: แสดงสินค้าทั่วไป กรองตามหมวดหมู่ และค้นหาด้วยคำค้น (q) ได้"""
     category_id = request.args.get("category", type=int)
     q = (request.args.get("q") or "").strip()
-    categories = db.query("SELECT id, name, image_url FROM categories ORDER BY name", fetchall=True)
+    is_ajax = request.headers.get("X-Requested-With") == "fetch"
+    # AJAX (เปลี่ยนหมวดหมู่) ไม่ต้องดึงหมวดหมู่ซ้ำ เพราะหน้าเดิมมีอยู่แล้ว
+    categories = [] if is_ajax else _get_categories()
 
     # สร้างเงื่อนไขแบบ dynamic (ใส่ prefix p. ให้ชัดเจนตั้งแต่ต้น)
     where = ["p.is_active = TRUE", "p.is_preorder = FALSE"]
@@ -46,23 +72,17 @@ def index():
     products = db.query(sql, tuple(params), fetchall=True)
 
     # ถ้าเป็น request แบบ AJAX (เปลี่ยนหมวดหมู่) คืนเฉพาะบล็อกรายการสินค้า ไม่โหลดทั้งหน้า
-    if request.headers.get("X-Requested-With") == "fetch":
+    if is_ajax:
         return render_template(
             "shop/_product_grid.html",
             products=products,
             search_query=q,
         )
 
-    # แบนเนอร์โฆษณา (แสดงเฉพาะหน้าแรก ไม่แสดงตอนค้นหา/กรองหมวด)
-    # เลือกเฉพาะแบนเนอร์ที่ตั้งให้แสดงหน้าสินค้า ('shop') หรือทั้งสอง ('both')
+    # แบนเนอร์โฆษณา (แสดงเฉพาะหน้าแรก ไม่แสดงตอนค้นหา/กรองหมวด) — ใช้ cache
     banners = []
     if not q and not category_id:
-        banners = db.query(
-            "SELECT image_url, link_url FROM banners "
-            "WHERE is_active = TRUE AND display_page IN ('shop', 'both') "
-            "ORDER BY sort_order, id",
-            fetchall=True,
-        )
+        banners = _get_shop_banners()
 
     return render_template(
         "shop/index.html",

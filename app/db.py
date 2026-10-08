@@ -222,6 +222,8 @@ def init_schema():
 
     CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
     CREATE INDEX IF NOT EXISTS idx_products_preorder ON products(is_preorder);
+    -- index ช่วย query หน้าร้าน: กรอง active + ไม่ใช่พรีออเดอร์ แล้วเรียงตามชื่อ
+    CREATE INDEX IF NOT EXISTS idx_products_listing ON products(is_active, is_preorder, name);
     CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
     CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
     CREATE INDEX IF NOT EXISTS idx_preorder_user ON preorder_requests(user_id);

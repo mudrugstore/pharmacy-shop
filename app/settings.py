@@ -4,6 +4,9 @@
 """
 from flask import g, current_app
 from app import db
+from app import cache
+
+_CACHE_KEY = "settings_all"
 
 # รายการ setting ทั้งหมด: key -> (ชื่อที่แสดงให้แอดมิน, เป็นข้อความยาวหรือไม่)
 SETTING_FIELDS = [
@@ -41,13 +44,22 @@ def ensure_defaults():
         )
 
 
-def get_all():
-    """ดึงการตั้งค่าทั้งหมดเป็น dict (cache ต่อ request ใน g)"""
-    if "settings" in g:
-        return g.settings
+def _load_from_db():
     rows = db.query("SELECT key, value FROM settings", fetchall=True) or []
     data = _defaults()
     data.update({r["key"]: r["value"] for r in rows})
+    return data
+
+
+def get_all():
+    """
+    ดึงการตั้งค่าทั้งหมดเป็น dict
+    - cache ต่อ request ใน g (เร็วสุด ไม่แตะ DB ซ้ำใน request เดียว)
+    - cache ชั้น process 60 วิ (ลด query DB ข้าม request)
+    """
+    if "settings" in g:
+        return g.settings
+    data = cache.get_or_set(_CACHE_KEY, _load_from_db, ttl=60)
     g.settings = data
     return data
 
@@ -64,4 +76,5 @@ def update(values):
             "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
             (key, val or ""),
         )
-    g.pop("settings", None)  # ล้าง cache เพื่อให้ดึงค่าใหม่
+    g.pop("settings", None)       # ล้าง cache ระดับ request
+    cache.invalidate(_CACHE_KEY)  # ล้าง cache ระดับ process ให้ดึงค่าใหม่ทันที
