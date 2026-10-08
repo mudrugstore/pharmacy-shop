@@ -12,20 +12,23 @@ def init_pool(database_url):
     if _pool is None:
         if not database_url:
             raise RuntimeError("DATABASE_URL ยังไม่ได้ตั้งค่า กรุณาตั้งใน .env")
-        # ตั้งค่าให้เหมาะกับ Supabase free tier + gunicorn หลาย worker:
-        # - max_size เล็ก (แต่ละ worker ถือ pool แยก คูณจำนวน worker แล้วไม่ควรชน limit)
-        # - max_idle คืน connection ที่ว่างนานเพื่อไม่ให้ค้างกิน connection ของ Supabase
-        # - max_lifetime รีไซเคิล connection กัน connection ตายจากฝั่ง pooler
-        # check=check_connection: ทดสอบ connection ก่อนส่งให้ใช้ ถ้าตาย/SSL เพี้ยน
-        #   (เช่น error 'bad record mac' จาก Supabase pooler) จะทิ้งแล้วสร้างใหม่อัตโนมัติ
+        # ตั้งค่าให้เหมาะกับ Supabase free tier (Transaction pooler port 6543):
+        # - min_size=0: ไม่ถือ connection ค้างตอน idle (Supabase pooler ตัด idle connection
+        #   เงียบๆ การถือค้างทำให้ pool แจก connection ตายแล้ว query พัง)
+        # - max_size เล็ก: Supabase free จำกัด connection รวม ห้ามถือเยอะ
+        # - max_lifetime สั้น: รีไซเคิล connection บ่อย กัน connection ตายจาก pooler
+        # - max_idle สั้น: คืน connection ที่ว่างเร็ว
+        # - timeout: รอ connection ไม่เกิน 10 วิ (ถ้าเกินค่อย error เร็วๆ ไม่ค้าง 30 วิ)
+        # ไม่ใช้ check เพราะทำให้ pool พยายาม validate ทุก connection พร้อมกันตอน
+        #   pooler ตัด connection → สร้างใหม่ไม่ทัน → PoolTimeout; ใช้ retry ใน query() แทน
         _pool = ConnectionPool(
             conninfo=database_url,
-            min_size=1,
-            max_size=5,
-            max_idle=60,
-            max_lifetime=1800,
-            timeout=30,
-            check=ConnectionPool.check_connection,
+            min_size=0,
+            max_size=4,
+            max_idle=30,
+            max_lifetime=600,
+            timeout=10,
+            reconnect_timeout=10,
             open=True,
             kwargs={"row_factory": dict_row},
         )
@@ -49,13 +52,15 @@ def query(sql, params=None, fetchone=False, fetchall=False, commit=False):
     - commit: psycopg v3 จะ commit อัตโนมัติเมื่อออกจาก context (ไม่มี error)
       พารามิเตอร์ commit คงไว้เพื่อความชัดเจนของเจตนาเท่านั้น
 
-    มี retry 1 ครั้งถ้าเจอ connection error (เช่น Supabase pooler ตัด connection
-    ทำให้เกิด 'bad record mac' หรือ connection ปิดกะทันหัน) โดย pool จะหยิบ
-    connection ใหม่ที่ผ่านการ check แล้วมาให้
+    มี retry ถ้าเจอ connection error หรือ pool หยิบ connection ไม่ได้ (เช่น Supabase
+    pooler ตัด connection ที่ค้างอยู่) โดยลองใหม่พร้อมหน่วงเล็กน้อยให้ pool สร้าง
+    connection ใหม่ทัน
     """
+    import time
     import psycopg
+    from psycopg_pool import PoolTimeout
 
-    attempts = 2
+    attempts = 3
     for i in range(attempts):
         try:
             with get_conn() as conn:
@@ -66,10 +71,10 @@ def query(sql, params=None, fetchone=False, fetchall=False, commit=False):
                     if fetchall:
                         return cur.fetchall()
                     return None
-        except (psycopg.OperationalError, psycopg.InterfaceError):
+        except (psycopg.OperationalError, psycopg.InterfaceError, PoolTimeout):
             if i == attempts - 1:
                 raise
-            # ลองใหม่อีกครั้ง pool จะ check แล้วหยิบ connection ที่ใช้งานได้มาให้
+            time.sleep(0.5 * (i + 1))  # หน่วงเพิ่มขึ้นก่อนลองใหม่ (0.5s, 1s)
 
 
 def init_schema():
