@@ -45,14 +45,34 @@
 </template>
 
 <script>
-// เปลี่ยนหมวดหมู่แบบ AJAX: โหลดเฉพาะบล็อกรายการสินค้า + แสดง skeleton เฉพาะในบล็อกนั้น
+// เปลี่ยนหมวดหมู่/เรียงลำดับแบบ AJAX: โหลดเฉพาะบล็อกรายการสินค้า + skeleton
 (function () {
     var block = document.getElementById("productBlock");
     var tpl = document.getElementById("skeletonTpl");
     if (!block || !tpl) return;
 
-    function loadCategory(url, push) {
-        // แสดง skeleton เฉพาะในบล็อกสินค้า (ไม่กระทบแถบค้นหา/หมวดหมู่ด้านบน)
+    // หมวดหมู่ที่เลือกอยู่ (จาก active chip)
+    function currentCategory() {
+        var active = document.querySelector(".js-cat.active");
+        if (!active) return null;
+        var href = active.getAttribute("href");
+        var m = href.match(/category=(\d+)/);
+        return m ? m[1] : null;
+    }
+    // ค่า sort ปัจจุบันจาก dropdown (ถ้ามี)
+    function currentSort() {
+        var sel = block.querySelector(".js-sort");
+        return sel ? sel.value : "newest";
+    }
+    function buildUrl() {
+        var params = [];
+        var cat = currentCategory();
+        if (cat) params.push("category=" + cat);
+        params.push("sort=" + currentSort());
+        return "/?" + params.join("&");
+    }
+
+    function loadGrid(url, push) {
         block.innerHTML = tpl.innerHTML;
         fetch(url, { headers: { "X-Requested-With": "fetch" } })
             .then(function (r) { return r.text(); })
@@ -60,28 +80,29 @@
                 block.innerHTML = html;
                 if (push) history.pushState({ url: url }, "", url);
             })
-            .catch(function () {
-                // ถ้า AJAX พลาด ให้โหลดหน้าปกติแทน
-                window.location.href = url;
-            });
+            .catch(function () { window.location.href = url; });
     }
 
-    // ดักคลิกหมวดหมู่
+    // คลิกหมวดหมู่
     document.querySelectorAll(".js-cat").forEach(function (a) {
         a.addEventListener("click", function (e) {
             e.preventDefault();
-            // อัปเดตสถานะ active ของปุ่มหมวดหมู่
             document.querySelectorAll(".js-cat").forEach(function (x) { x.classList.remove("active"); });
             a.classList.add("active");
-            loadCategory(a.getAttribute("href"), true);
-            // เลื่อนขึ้นไปที่บล็อกสินค้าเล็กน้อยให้เห็น skeleton
+            loadGrid(buildUrl(), true);   // คง sort ปัจจุบันไว้ด้วย
             block.scrollIntoView({ behavior: "smooth", block: "nearest" });
         });
     });
 
-    // รองรับปุ่ม back/forward ของเบราว์เซอร์
+    // เปลี่ยนการเรียงลำดับ (dropdown อยู่ในบล็อกที่ reload — ใช้ delegation)
+    block.addEventListener("change", function (e) {
+        if (e.target && e.target.classList.contains("js-sort")) {
+            loadGrid(buildUrl(), true);
+        }
+    });
+
     window.addEventListener("popstate", function () {
-        loadCategory(window.location.href, false);
+        loadGrid(window.location.href, false);
     });
 })();
 </script>

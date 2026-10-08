@@ -4,6 +4,13 @@
 {% else %}
 <div class="section-bar">
     <span class="section-bar-title">สินค้าแนะนำ</span>
+    <select class="dt-search js-sort" style="max-width:200px;flex:none;" title="เรียงลำดับ">
+        <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>ล่าสุด</option>
+        <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>เก่าสุด</option>
+        <option value="price_low" {% if current_sort == 'price_low' %}selected{% endif %}>ราคา: ต่ำ → สูง</option>
+        <option value="price_high" {% if current_sort == 'price_high' %}selected{% endif %}>ราคา: สูง → ต่ำ</option>
+        <option value="name" {% if current_sort == 'name' %}selected{% endif %}>ชื่อ: ก → ฮ</option>
+    </select>
 </div>
 {% endif %}
 

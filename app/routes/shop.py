@@ -49,9 +49,20 @@ def index():
     """หน้าร้าน: แสดงสินค้าทั่วไป กรองตามหมวดหมู่ และค้นหาด้วยคำค้น (q) ได้"""
     category_id = request.args.get("category", type=int)
     q = (request.args.get("q") or "").strip()
+    sort = (request.args.get("sort") or "").strip()
     is_ajax = request.headers.get("X-Requested-With") == "fetch"
-    # AJAX (เปลี่ยนหมวดหมู่) ไม่ต้องดึงหมวดหมู่ซ้ำ เพราะหน้าเดิมมีอยู่แล้ว
+    # AJAX (เปลี่ยนหมวดหมู่/เรียงลำดับ) ไม่ต้องดึงหมวดหมู่ซ้ำ เพราะหน้าเดิมมีอยู่แล้ว
     categories = [] if is_ajax else _get_categories()
+
+    # whitelist การเรียงลำดับ (กัน SQL injection — ไม่เอา input ตรงไปใส่ ORDER BY)
+    sort_map = {
+        "newest": "p.created_at DESC",      # รายการใหม่-เก่า (ค่าเริ่มต้น)
+        "oldest": "p.created_at ASC",       # รายการเก่า-ใหม่
+        "price_low": "p.price ASC, p.name", # ราคาต่ำ-สูง
+        "price_high": "p.price DESC, p.name",# ราคาสูง-ต่ำ
+        "name": "p.name",                   # ชื่อ ก-ฮ
+    }
+    order_by = sort_map.get(sort, "p.created_at DESC")
 
     # สร้างเงื่อนไขแบบ dynamic (ใส่ prefix p. ให้ชัดเจนตั้งแต่ต้น)
     where = ["p.is_active = TRUE", "p.is_preorder = FALSE"]
@@ -67,16 +78,17 @@ def index():
         "SELECT p.id, p.name, p.description, p.price, p.stock, p.image_url, p.badge_text, "
         "c.name AS category_name "
         "FROM products p LEFT JOIN categories c ON p.category_id = c.id "
-        f"WHERE {' AND '.join(where)} ORDER BY p.name"
+        f"WHERE {' AND '.join(where)} ORDER BY {order_by}"
     )
     products = db.query(sql, tuple(params), fetchall=True)
 
-    # ถ้าเป็น request แบบ AJAX (เปลี่ยนหมวดหมู่) คืนเฉพาะบล็อกรายการสินค้า ไม่โหลดทั้งหน้า
+    # ถ้าเป็น request แบบ AJAX (เปลี่ยนหมวดหมู่/เรียงลำดับ) คืนเฉพาะบล็อกรายการสินค้า
     if is_ajax:
         return render_template(
             "shop/_product_grid.html",
             products=products,
             search_query=q,
+            current_sort=sort or "newest",
         )
 
     # แบนเนอร์โฆษณา (แสดงเฉพาะหน้าแรก ไม่แสดงตอนค้นหา/กรองหมวด) — ใช้ cache
@@ -91,6 +103,7 @@ def index():
         selected_category=category_id,
         search_query=q,
         banners=banners,
+        current_sort=sort or "newest",
     )
 
 
