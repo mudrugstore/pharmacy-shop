@@ -7,7 +7,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     {% if supabase_url %}<link rel="preconnect" href="{{ supabase_url }}" crossorigin>{% endif %}
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {# โหลดฟอนต์แบบ non-blocking: หน้าแสดงทันทีด้วยฟอนต์สำรอง แล้วค่อยสลับเป็น Kanit
+       ลดน้ำหนักฟอนต์เหลือเท่าที่ใช้จริง (300/500/600) เพื่อโหลดเร็วขึ้น #}
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;600;700&display=swap"
+          media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;500;600;700&display=swap">
+    </noscript>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         /* สีธีมที่แอดมินตั้งค่าได้เอง */
