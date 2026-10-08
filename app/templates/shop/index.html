@@ -85,4 +85,104 @@
     });
 })();
 </script>
+
+{# ===== Popup รายละเอียดสินค้า (ไม่โหลดหน้าใหม่ ใช้ข้อมูลจากการ์ด ไม่ query DB) ===== #}
+<div id="productModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true">
+        <button type="button" class="modal-close" id="modalClose" aria-label="ปิด">&times;</button>
+        <div class="modal-content">
+            <div class="modal-img">
+                <img id="mdImg" src="" alt="">
+                <div id="mdImgPh" class="card-img-placeholder" style="display:none;">&#128138;</div>
+            </div>
+            <div class="modal-info">
+                <div class="muted" id="mdCat" style="font-size:.85rem;"></div>
+                <h2 id="mdName" style="font-size:1.3rem; margin:6px 0;"></h2>
+                <div class="pd-price"><span class="num"><span style="font-size:1rem;">฿</span><span id="mdPrice"></span></span></div>
+                <div id="mdStock" style="margin-bottom:12px;"></div>
+                <div id="mdAction"></div>
+                <div style="margin-top:16px;">
+                    <div class="section-title" style="margin-top:0;">รายละเอียดสินค้า</div>
+                    <p class="muted" id="mdDesc" style="white-space:pre-line;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// เปิดรายละเอียดสินค้าแบบ popup โดยใช้ข้อมูลจากการ์ด (ไม่โหลดหน้าใหม่ ไม่ query DB)
+(function () {
+    var modal = document.getElementById("productModal");
+    if (!modal) return;
+    var loggedIn = document.body.dataset.loggedIn === "1";
+    var loginUrl = document.body.dataset.loginUrl;
+
+    var el = {
+        img: document.getElementById("mdImg"),
+        imgPh: document.getElementById("mdImgPh"),
+        cat: document.getElementById("mdCat"),
+        name: document.getElementById("mdName"),
+        price: document.getElementById("mdPrice"),
+        stock: document.getElementById("mdStock"),
+        action: document.getElementById("mdAction"),
+        desc: document.getElementById("mdDesc"),
+    };
+
+    function openModal(card) {
+        var d = card.dataset;
+        if (d.image) {
+            el.img.src = d.image; el.img.style.display = "block"; el.imgPh.style.display = "none";
+        } else {
+            el.img.style.display = "none"; el.imgPh.style.display = "flex";
+        }
+        el.cat.textContent = d.category;
+        el.name.textContent = d.name;
+        el.price.textContent = d.price;
+        el.desc.textContent = d.desc || "ไม่มีรายละเอียด";
+
+        var stock = parseInt(d.stock, 10);
+        if (stock > 0) {
+            el.stock.innerHTML = '<span class="stock-ok">&#10003; มีสินค้า ' + stock + ' ชิ้น</span>';
+            if (loggedIn) {
+                // ฟอร์มเพิ่มลงตะกร้า — submit จริงไป server (ตัดสต็อกถูกต้อง)
+                el.action.innerHTML =
+                    '<form method="post" action="/cart/add/' + d.id + '">' +
+                    '<div class="qty-stepper" style="margin-bottom:10px;">' +
+                    '<button type="button" data-step="-1">&minus;</button>' +
+                    '<input type="number" name="quantity" value="1" min="1" max="' + stock + '">' +
+                    '<button type="button" data-step="1">+</button></div>' +
+                    '<button type="submit" class="btn" style="min-width:200px;">&#128722; เพิ่มลงตะกร้า</button>' +
+                    '</form>';
+            } else {
+                el.action.innerHTML = '<a href="' + loginUrl + '" class="btn" style="min-width:200px;">เข้าสู่ระบบเพื่อสั่งซื้อ</a>';
+            }
+        } else {
+            el.stock.innerHTML = '<span class="stock-out">สินค้าหมด</span>';
+            el.action.innerHTML = "";
+        }
+
+        modal.classList.add("show");
+        document.body.style.overflow = "hidden";  // กันหน้าเลื่อนตอนเปิด modal
+    }
+    function closeModal() {
+        modal.classList.remove("show");
+        document.body.style.overflow = "";
+    }
+
+    // ดักคลิกการ์ดสินค้า (ใช้ delegation เพื่อรองรับการ์ดที่โหลดใหม่ตอนเปลี่ยนหมวดหมู่)
+    document.addEventListener("click", function (e) {
+        var open = e.target.closest(".js-product-open");
+        if (open) {
+            var card = open.closest(".js-product");
+            if (card) { e.preventDefault(); openModal(card); }
+            return;
+        }
+        if (e.target === modal || e.target.id === "modalClose") closeModal();
+    });
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeModal();
+    });
+})();
+</script>
 {% endblock %}

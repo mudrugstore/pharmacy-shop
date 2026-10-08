@@ -10,13 +10,20 @@
 {% if products %}
 <div class="grid">
     {% for p in products %}
-    <div class="card">
+    <div class="card js-product"
+         data-id="{{ p.id }}"
+         data-name="{{ p.name|e }}"
+         data-price="{{ '%.0f'|format(p.price) if p.price == p.price|round(0) else '%.2f'|format(p.price) }}"
+         data-stock="{{ p.stock }}"
+         data-category="{{ (p.category_name or 'ทั่วไป')|e }}"
+         data-image="{{ p.image_url|e }}"
+         data-desc="{{ (p.description or '')|e }}">
         {% if p.stock <= 0 %}
             <span class="badge-corner badge-soldout">สินค้าหมด</span>
         {% else %}
             <span class="badge-corner">ยา</span>
         {% endif %}
-        <a href="{{ url_for('shop.product_detail', product_id=p.id) }}" class="card-link">
+        <a href="{{ url_for('shop.product_detail', product_id=p.id) }}" class="card-link js-product-open">
             <div class="card-img-wrap">
                 {% if p.image_url %}
                     <img src="{{ p.image_url }}" alt="{{ p.name }}" class="card-img" loading="lazy">

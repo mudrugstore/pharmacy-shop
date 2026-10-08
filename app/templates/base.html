@@ -18,7 +18,9 @@
         }
     </style>
 </head>
-<body>
+<body data-logged-in="{{ '1' if current_user and not current_user.is_admin else '0' }}"
+      data-login-url="{{ url_for('auth.login') }}">
+
 <!-- แถบความคืบหน้าด้านบน + overlay spinner ตอนเปลี่ยนหน้า -->
 <div id="pageProgress" class="page-progress"></div>
 <div id="pageLoader" class="page-loader" aria-hidden="true">
@@ -165,6 +167,7 @@ document.addEventListener("click", function (e) {
         var a = e.target.closest("a");
         if (!a) return;
         if (a.classList.contains("js-cat")) return;  // หมวดหมู่ใช้ AJAX ไม่ต้องขึ้น loader เต็มจอ
+        if (a.classList.contains("js-product-open")) return;  // เปิดรายละเอียดเป็น popup ไม่โหลดหน้าใหม่
         var href = a.getAttribute("href") || "";
         if (!href || href.charAt(0) === "#") return;
         if (href.indexOf("javascript:") === 0) return;
