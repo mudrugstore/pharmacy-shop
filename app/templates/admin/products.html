@@ -10,29 +10,44 @@
 <div class="table-wrap responsive-cards">
     <table class="js-datatable" data-page-size="10">
         <thead>
-            <tr><th>รูป</th><th>ชื่อ</th><th>หมวดหมู่</th><th>ราคา</th><th>สต็อก</th><th>ประเภท</th><th></th></tr>
+            <tr><th data-no-sort>รูป</th><th>ชื่อ</th><th>หมวดหมู่</th><th>ราคา</th><th>คงเหลือ</th><th data-no-sort>ปรับสต็อก</th><th>ประเภท</th><th data-no-sort>จัดการ</th></tr>
         </thead>
         <tbody>
         {% for p in products %}
             <tr>
                 <td data-label="รูป">
-                    {% if p.image_url %}<img src="{{ p.image_url }}" style="width:48px;height:48px;object-fit:cover;border-radius:4px;">
-                    {% else %}<span class="muted">-</span>{% endif %}
+                    {% if p.image_url %}<img src="{{ p.image_url }}" style="width:46px;height:46px;object-fit:cover;border-radius:6px;">
+                    {% else %}<div class="no-img">&#128138;</div>{% endif %}
                 </td>
-                <td data-label="ชื่อ">{{ p.name }}</td>
+                <td data-label="ชื่อ"><strong>{{ p.name }}</strong></td>
                 <td data-label="หมวดหมู่">{{ p.category_name or '-' }}</td>
-                <td data-label="ราคา">{{ p.price|money }}</td>
-                <td data-label="สต็อก">
+                <td data-label="ราคา">฿{{ p.price|money }}</td>
+                <td data-label="คงเหลือ">
+                    {% if p.stock <= 0 %}
+                        <span class="pill pill-danger">หมด</span>
+                    {% elif p.stock <= 5 %}
+                        <span class="pill pill-warn">เหลือ {{ p.stock }}</span>
+                    {% else %}
+                        <span class="pill pill-ok">{{ p.stock }}</span>
+                    {% endif %}
+                </td>
+                <td data-label="ปรับสต็อก">
                     <form method="post" action="{{ url_for('admin.update_stock', product_id=p.id) }}" class="row-actions">
-                        <input type="number" name="stock" value="{{ p.stock }}" min="0" class="qty-input">
-                        <button type="submit" class="btn-small btn-secondary">ตั้ง</button>
+                        <input type="number" name="stock" value="{{ p.stock }}" min="0" class="qty-input" title="จำนวนคงเหลือ">
+                        <button type="submit" class="btn-small btn-secondary" title="บันทึกจำนวนสต็อก">บันทึก</button>
                     </form>
                 </td>
-                <td data-label="ประเภท">{% if p.is_preorder %}พรีออเดอร์{% else %}ทั่วไป{% endif %}</td>
-                <td data-label="" class="row-actions">
+                <td data-label="ประเภท">
+                    {% if p.is_preorder %}
+                        <span class="pill pill-pre">พรีออเดอร์</span>
+                    {% else %}
+                        <span class="pill pill-normal">ทั่วไป</span>
+                    {% endif %}
+                </td>
+                <td data-label="จัดการ" class="row-actions">
                     <a href="{{ url_for('admin.edit_product', product_id=p.id) }}" class="btn-small">แก้ไข</a>
                     <form method="post" action="{{ url_for('admin.delete_product', product_id=p.id) }}" class="inline-form"
-                          onsubmit="return confirm('ลบสินค้านี้?');">
+                          onsubmit="return confirm('ลบสินค้า {{ p.name }}?');">
                         <button type="submit" class="btn-small btn-danger">ลบ</button>
                     </form>
                 </td>

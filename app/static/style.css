@@ -450,6 +450,18 @@ input[type="number"]:focus {
     .modal-box { max-height: 94vh; }
 }
 
+/* ===== Pill badge ในตาราง admin (ดูง่ายขึ้น) ===== */
+.pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .8rem; font-weight: 500; white-space: nowrap; }
+.pill-ok { background: #e3f6e9; color: #176c38; }
+.pill-warn { background: #fff4e0; color: #9a6a00; }
+.pill-danger { background: #fdecea; color: #a3271c; }
+.pill-normal { background: #eef1f4; color: #566573; }
+.pill-pre { background: var(--primary-light); color: var(--primary); }
+.no-img {
+    width: 46px; height: 46px; border-radius: 6px; background: #f0f0f0;
+    display: flex; align-items: center; justify-content: center; color: #cfcfcf; font-size: 1.2rem;
+}
+
 /* ===== DataTable (ค้นหา/เรียง/แบ่งหน้า) ===== */
 .dt-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .dt-search {

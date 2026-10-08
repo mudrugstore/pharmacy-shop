@@ -22,7 +22,7 @@
 {% if categories %}
 <div class="table-wrap responsive-cards">
     <table class="js-datatable" data-page-size="10">
-        <thead><tr><th>รูป</th><th>ชื่อหมวดหมู่</th><th>จำนวนสินค้า</th><th></th></tr></thead>
+        <thead><tr><th data-no-sort>รูป</th><th>ชื่อหมวดหมู่</th><th>จำนวนสินค้า</th><th data-no-sort>จัดการ</th></tr></thead>
         <tbody>
         {% for c in categories %}
             <tr>
@@ -32,9 +32,9 @@
                 </td>
                 <td data-label="ชื่อหมวดหมู่">{{ c.name }}</td>
                 <td data-label="จำนวนสินค้า">{{ c.product_count }}</td>
-                <td data-label="">
+                <td data-label="จัดการ">
                     <form method="post" action="{{ url_for('admin.delete_category', category_id=c.id) }}" class="inline-form"
-                          onsubmit="return confirm('ลบหมวดหมู่นี้?');">
+                          onsubmit="return confirm('ลบหมวดหมู่ {{ c.name }}?');">
                         <button type="submit" class="btn-small btn-danger">ลบ</button>
                     </form>
                 </td>

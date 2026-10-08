@@ -32,7 +32,8 @@
         // ทำให้หัวตารางคลิกเรียงได้ (ยกเว้นคอลัมน์ที่ไม่มีข้อความ/ปุ่ม)
         var headCells = table.tHead ? table.tHead.rows[0].cells : [];
         Array.prototype.forEach.call(headCells, function (th, idx) {
-            if (th.textContent.trim() === "") return;  // คอลัมน์ปุ่ม ไม่ต้องเรียง
+            if (th.textContent.trim() === "") return;        // คอลัมน์ว่าง ไม่ต้องเรียง
+            if (th.hasAttribute("data-no-sort")) return;     // คอลัมน์ที่กำหนดไม่ให้เรียง (เช่น ปุ่ม)
             th.classList.add("dt-sortable");
             th.addEventListener("click", function () {
                 if (state.sortCol === idx) { state.sortDir *= -1; }
