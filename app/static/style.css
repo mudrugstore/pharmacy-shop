@@ -793,6 +793,9 @@ a.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover)
     position: fixed; inset: 0; z-index: 1999;
     background: rgba(255,255,255,.92);
     display: none; align-items: center; justify-content: center;
+    /* overlay เป็นภาพแสดงสถานะอย่างเดียว ไม่รับ/บัง event
+       (กันกรณี overlay ขึ้นแล้วไปขวางคลิกลิงก์/ปุ่ม จนไม่เปลี่ยนหน้า) */
+    pointer-events: none;
 }
 .page-loader.show { display: flex; }
 .loader-box { text-align: center; }

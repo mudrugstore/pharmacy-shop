@@ -210,20 +210,15 @@ document.addEventListener("click", function (e) {
         return true;
     }
 
-    // แตะ/คลิกลิงก์ภายในเว็บ -> ขึ้น loader
-    // ใช้ทั้ง pointerdown (มือถือ: มาก่อน navigate ทำให้ overlay มีเวลา paint) และ click (desktop/คีย์บอร์ด)
-    function onLinkActivate(e) {
+    // คลิกลิงก์ภายในเว็บ -> ขึ้น loader
+    // ใช้ "click" เท่านั้น (ไม่ใช้ pointerdown เพราะ overlay จะขึ้นคลุมจอก่อน click
+    //  ทำให้ลิงก์ไม่ถูกคลิก -> ไม่เปลี่ยนหน้า). overlay มี pointer-events:none อยู่แล้ว
+    //  จึงคลิกทะลุได้ และ loader ขึ้นหลัง browser รับ click ของลิงก์แล้ว navigate ปกติ
+    document.addEventListener("click", function (e) {
         if (e.defaultPrevented) return;
         if (e.ctrlKey || e.metaKey || e.shiftKey) return;  // เปิดแท็บใหม่
-        if (e.type === "pointerdown" && e.button && e.button !== 0) return;  // คลิกขวา/กลาง
         var a = e.target.closest("a");
         if (isNavLink(a)) showLoader();
-    }
-    document.addEventListener("pointerdown", onLinkActivate);
-    document.addEventListener("click", onLinkActivate);
-    // ถ้าแตะลิงก์แล้วยกเลิก (เลื่อนจอ/แตะพลาด) โดยไม่ได้เปลี่ยนหน้า -> ซ่อน loader
-    document.addEventListener("pointercancel", function () {
-        if (shown) forceHide();
     });
 
     // submit form (ค้นหา/สั่งซื้อ/บันทึก) — ข้ามฟอร์มที่เป็น AJAX (จัดการ loading เอง)
