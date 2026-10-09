@@ -4,6 +4,7 @@
 <h1 class="page-title">คำสั่งซื้อทั้งหมด</h1>
 {% include "admin/_nav.html" %}
 
+{% if limited %}<p class="muted" style="margin-bottom:12px;font-size:.85rem;">แสดง 100 รายการล่าสุด (ใช้ช่องค้นหาด้านบนเพื่อกรองในรายการที่แสดง)</p>{% endif %}
 {% if orders %}
 <div class="table-wrap responsive-cards">
     <table>

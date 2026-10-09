@@ -319,13 +319,16 @@ def delete_product(product_id):
 @bp.route("/orders")
 @admin_required
 def orders():
+    # ดึงเฉพาะ 100 รายการล่าสุด (ลดข้อมูลที่โหลด/ส่ง เมื่อออเดอร์สะสมเยอะขึ้น)
+    # หน้ารายละเอียดยังเปิดดูออเดอร์เก่าได้ด้วย URL ตรง
     rows = db.query(
         """SELECT o.id, o.total, o.status, o.created_at, u.name AS customer_name, u.phone
            FROM orders o JOIN users u ON o.user_id = u.id
-           ORDER BY o.created_at DESC""",
+           ORDER BY o.created_at DESC
+           LIMIT 100""",
         fetchall=True,
     )
-    return render_template("admin/orders.html", orders=rows)
+    return render_template("admin/orders.html", orders=rows, limited=len(rows) == 100)
 
 
 @bp.route("/orders/<int:order_id>", methods=["GET", "POST"])
@@ -371,10 +374,11 @@ def preorders():
         """SELECT pr.id, pr.product_name, pr.quantity, pr.status, pr.created_at,
                   u.name AS customer_name, u.phone
            FROM preorder_requests pr JOIN users u ON pr.user_id = u.id
-           ORDER BY pr.created_at DESC""",
+           ORDER BY pr.created_at DESC
+           LIMIT 100""",
         fetchall=True,
     )
-    return render_template("admin/preorders.html", preorders=rows)
+    return render_template("admin/preorders.html", preorders=rows, limited=len(rows) == 100)
 
 
 @bp.route("/preorders/status/<int:request_id>", methods=["POST"])

@@ -4,6 +4,7 @@
 <h1 class="page-title">รายการพรีออเดอร์</h1>
 {% include "admin/_nav.html" %}
 
+{% if limited %}<p class="muted" style="margin-bottom:12px;font-size:.85rem;">แสดง 100 รายการล่าสุด</p>{% endif %}
 {% if preorders %}
 <div class="table-wrap responsive-cards">
     <table>

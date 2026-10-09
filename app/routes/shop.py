@@ -334,7 +334,8 @@ def checkout():
 def orders():
     user = get_current_user()
     rows = db.query(
-        "SELECT id, total, status, created_at FROM orders WHERE user_id = %s ORDER BY created_at DESC",
+        "SELECT id, total, status, created_at FROM orders WHERE user_id = %s "
+        "ORDER BY created_at DESC LIMIT 100",
         (user["id"],),
         fetchall=True,
     )
