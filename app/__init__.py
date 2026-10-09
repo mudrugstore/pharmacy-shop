@@ -94,6 +94,9 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def inject_globals():
+        # AJAX ที่คืน partial (เช่น เปลี่ยนหมวดหมู่) ไม่ต้องใช้ badge/cart_count
+        # -> ข้าม query ของ _nav_badges เพื่อลดภาระ DB ต่อ request (settings มี cache อยู่แล้ว)
+        is_ajax = request.headers.get("X-Requested-With") == "fetch"
         s = settings.get_all()
         user = get_current_user()
         return {
@@ -108,7 +111,7 @@ def create_app(config_class=Config):
             "logo_url": s.get("logo_url") or "",
             "supabase_url": app.config.get("SUPABASE_URL") or "",
             "cart_count": _cart_count(),
-            "nav_badges": _nav_badges(user),
+            "nav_badges": {} if is_ajax else _nav_badges(user),
         }
 
     return app

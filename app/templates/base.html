@@ -214,9 +214,13 @@ document.addEventListener("click", function (e) {
     function showToast(msg, ok) {
         if (!toast) return;
         toast.textContent = msg;
-        toast.className = "toast show" + (ok ? "" : " toast-err");
+        // ตั้ง base class (ซ่อน) ก่อน แล้ว force reflow ให้ Safari เห็นสถานะเริ่มต้น
+        // จากนั้นค่อยเพิ่ม .show เพื่อให้ transition เล่นชัวร์ทุกเบราว์เซอร์
+        toast.className = "toast" + (ok ? "" : " toast-err");
+        void toast.offsetWidth;
+        toast.classList.add("show");
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(function () { toast.className = "toast"; }, 1800);
+        toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 1800);
     }
     // ให้สคริปต์หน้าอื่น (เช่น พรีออเดอร์) เรียก toast ได้
     window.showAppToast = showToast;
@@ -258,12 +262,17 @@ document.addEventListener("click", function (e) {
             fly.style.width = "50px"; fly.style.height = "50px";
         }
         document.body.appendChild(fly);
+        // Safari ไม่ trigger transition ถ้าเปลี่ยนค่าใน rAF เดียวกันกับที่ append
+        // -> force reflow แล้วใช้ double rAF ให้ค่าเริ่มต้นถูก paint ก่อน
+        void fly.offsetWidth;
         requestAnimationFrame(function () {
-            fly.style.left = (t.left + t.width / 2) + "px";
-            fly.style.top = (t.top + t.height / 2) + "px";
-            fly.style.width = "18px"; fly.style.height = "18px"; fly.style.opacity = "0.2";
+            requestAnimationFrame(function () {
+                fly.style.left = (t.left + t.width / 2) + "px";
+                fly.style.top = (t.top + t.height / 2) + "px";
+                fly.style.width = "18px"; fly.style.height = "18px"; fly.style.opacity = "0.2";
+            });
         });
-        setTimeout(function () { fly.remove(); }, 650);
+        setTimeout(function () { fly.remove(); }, 700);
     }
 
     function closeProductModal() {
