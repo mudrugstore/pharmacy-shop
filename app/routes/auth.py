@@ -73,16 +73,22 @@ def login():
             (phone,),
             fetchone=True,
         )
+
+        # กรณีถูกแอดมินรีเซ็ตรหัส (ลืมรหัสเดิม) -> ให้เข้าด้วยเบอร์โทรอย่างเดียว
+        # (ไม่ต้องตรวจรหัสเดิม เพราะ user ลืม) แล้วบังคับไปตั้งรหัสใหม่ทันที
+        # ตรวจเบอร์ก่อนว่ามีจริง แต่ข้ามการตรวจรหัสผ่าน
+        if user is not None and user["must_reset_password"]:
+            session.clear()
+            session["user_id"] = user["id"]
+            flash("บัญชีของคุณถูกรีเซ็ตรหัส กรุณาตั้งรหัสผ่านใหม่", "warning")
+            return redirect(url_for("auth.force_reset"))
+
         if user is None or not check_password_hash(user["password_hash"], password):
             flash("เบอร์โทรหรือรหัสผ่านไม่ถูกต้อง", "danger")
             return render_template("auth/login.html", phone=phone)
 
         session.clear()
         session["user_id"] = user["id"]
-
-        if user["must_reset_password"]:
-            flash("บัญชีของคุณถูกรีเซ็ตรหัส กรุณาตั้งรหัสผ่านใหม่", "warning")
-            return redirect(url_for("auth.force_reset"))
 
         flash("เข้าสู่ระบบสำเร็จ", "success")
         if user["is_admin"]:
