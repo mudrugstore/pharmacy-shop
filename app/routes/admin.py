@@ -175,7 +175,10 @@ def new_product():
 @bp.route("/products/edit/<int:product_id>", methods=["GET", "POST"])
 @admin_required
 def edit_product(product_id):
-    product = db.query("SELECT * FROM products WHERE id = %s", (product_id,), fetchone=True)
+    # เลือกเฉพาะคอลัมน์ที่ฟอร์มใช้ (ไม่ดึง created_at/คอลัมน์อื่นที่ไม่ได้แสดง)
+    _prod_cols = ("id, category_id, name, description, price, stock, "
+                  "image_url, is_preorder, badge_text")
+    product = db.query(f"SELECT {_prod_cols} FROM products WHERE id = %s", (product_id,), fetchone=True)
     if not product:
         flash("ไม่พบสินค้านี้", "danger")
         return redirect(url_for("admin.products"))
@@ -195,7 +198,7 @@ def edit_product(product_id):
             from flask import jsonify
             return jsonify({"ok": False, "error": result}), 400
         flash(result, "danger")
-        product = db.query("SELECT * FROM products WHERE id = %s", (product_id,), fetchone=True)
+        product = db.query(f"SELECT {_prod_cols} FROM products WHERE id = %s", (product_id,), fetchone=True)
 
     return render_template("admin/product_form.html", categories=categories, product=product)
 

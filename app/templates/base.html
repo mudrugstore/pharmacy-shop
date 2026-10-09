@@ -159,20 +159,26 @@ document.addEventListener("click", function (e) {
     if (!loader || !progress) return;
     var shown = false;
 
+    var safetyTimer;
     function showLoader() {
         if (shown) return;
         shown = true;
         progress.classList.add("active");
         loader.classList.add("show");   // ขึ้นทันที (มือถือมักไม่ทัน setTimeout)
+        // กันเหนียว: ถ้าไม่เปลี่ยนหน้าภายใน 8 วิ ให้ซ่อน loader เอง (กันค้างถาวร)
+        clearTimeout(safetyTimer);
+        safetyTimer = setTimeout(hideLoader, 8000);
     }
     function hideLoader() {
         shown = false;
+        clearTimeout(safetyTimer);
         loader.classList.remove("show");
         progress.classList.remove("active");
     }
 
     // คลิก/แตะลิงก์ภายในเว็บ
     document.addEventListener("click", function (e) {
+        if (e.defaultPrevented) return;   // ถูกยกเลิกไปแล้ว ไม่ต้องขึ้น loader
         var a = e.target.closest("a");
         if (!a) return;
         if (a.classList.contains("js-cat")) return;  // หมวดหมู่ใช้ AJAX ไม่ต้องขึ้น loader เต็มจอ
@@ -188,6 +194,9 @@ document.addEventListener("click", function (e) {
 
     // submit form (ค้นหา/สั่งซื้อ/บันทึก) — ข้ามฟอร์มที่เป็น AJAX (จัดการ loading เอง)
     document.addEventListener("submit", function (e) {
+        // ถ้าฟอร์มถูกยกเลิกการ submit ไปแล้ว (เช่น onsubmit="return confirm(...)" กด "ยกเลิก")
+        // อย่าแสดง loader (ไม่งั้น spinner จะค้างทั้งที่ไม่ได้ส่งฟอร์ม)
+        if (e.defaultPrevented) return;
         var f = e.target;
         if (!f || !f.classList) return;
         if (f.hasAttribute("data-ajax")) return;        // ฟอร์ม AJAX ทั่วไป
@@ -319,6 +328,5 @@ document.addEventListener("click", function (e) {
     });
 })();
 </script>
-<script src="{{ url_for('static', filename='datatable.js') }}" defer></script>
 </body>
 </html>
