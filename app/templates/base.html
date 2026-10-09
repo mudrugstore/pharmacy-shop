@@ -220,17 +220,22 @@ document.addEventListener("click", function (e) {
     }
     // ให้สคริปต์หน้าอื่น (เช่น พรีออเดอร์) เรียก toast ได้
     window.showAppToast = showToast;
-    function bumpCart(count) {
+    function setBadge(count) {
         if (badge) {
             badge.textContent = count;
             badge.style.display = count > 0 ? "" : "none";
         }
+    }
+    function bumpCart(count) {
+        setBadge(count);
         if (cartLink) {
             cartLink.classList.remove("cart-bump");
             void cartLink.offsetWidth;   // reflow เพื่อ replay animation
             cartLink.classList.add("cart-bump");
         }
     }
+    // ให้หน้าตะกร้าอัปเดต badge ได้ (เช่น ลด/ลบสินค้า) โดยไม่ต้องเล่น animation bump
+    window.setCartBadge = setBadge;
     // รูปบินเข้าตะกร้า (ถ้ามี element รูปต้นทาง)
     function flyToCart(fromImg) {
         if (!fromImg || !cartLink) return;

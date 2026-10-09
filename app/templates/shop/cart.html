@@ -5,26 +5,38 @@
 
 {% if items %}
 <div id="cartWrap">
+    {# แถบเลือกทั้งหมด #}
+    <div class="cart-head">
+        <label class="cart-check">
+            <input type="checkbox" id="cartCheckAll" checked>
+            <span>เลือกทั้งหมด ({{ items|length }})</span>
+        </label>
+    </div>
+
     <div class="cart-list">
         {% for it in items %}
-        <div class="cart-item" data-id="{{ it.id }}" data-stock="{{ it.stock }}">
+        <div class="cart-item" data-id="{{ it.id }}" data-stock="{{ it.stock }}"
+             data-price="{{ it.price }}">
+            <label class="cart-check cart-item-check">
+                <input type="checkbox" class="js-cart-select" checked>
+            </label>
             <div class="cart-item-img">
-                {% if it.image_url %}<img src="{{ it.image_url }}" alt="{{ it.name }}">
+                {% if it.image_url %}<img src="{{ it.image_url }}" alt="{{ it.name }}" loading="lazy">
                 {% else %}<div class="no-img" style="width:100%;height:100%;">&#128138;</div>{% endif %}
             </div>
             <div class="cart-item-info">
                 <div class="cart-item-name">{{ it.name }}</div>
-                <div class="muted" style="font-size:.8rem;">฿{{ it.price|money }} / ชิ้น</div>
-                <div class="cart-item-price">฿<span class="cart-subtotal">{{ it.subtotal|money }}</span></div>
-            </div>
-            <div class="cart-item-ctrl">
-                <div class="qty-stepper cart-stepper">
-                    <button type="button" class="js-cart-minus">&minus;</button>
-                    <input type="number" class="cart-qty" value="{{ it.quantity }}" min="0" max="{{ it.stock }}" readonly>
-                    <button type="button" class="js-cart-plus">+</button>
+                <div class="cart-item-price">฿<span class="cart-unit-price">{{ it.price|money }}</span></div>
+                <div class="cart-item-foot">
+                    <div class="qty-stepper cart-stepper">
+                        <button type="button" class="js-cart-minus" aria-label="ลด">&minus;</button>
+                        <input type="number" class="cart-qty" value="{{ it.quantity }}" min="0" max="{{ it.stock }}" readonly>
+                        <button type="button" class="js-cart-plus" aria-label="เพิ่ม">+</button>
+                    </div>
+                    <span class="cart-stock-left">เหลือ {{ it.stock }} ชิ้น</span>
                 </div>
-                <button type="button" class="cart-remove js-cart-remove" title="ลบ">&times;</button>
             </div>
+            <button type="button" class="cart-remove js-cart-remove" title="ลบ" aria-label="ลบสินค้า">&times;</button>
         </div>
         {% endfor %}
     </div>
@@ -33,19 +45,28 @@
         {{ checkout_message }} โทร <strong>{{ store_phone }}</strong>
     </div>
 
-    <div class="cart-summary">
-        <div class="cart-total-row">
-            <span>ยอดรวมทั้งหมด</span>
+    {# หมายเหตุถึงร้าน + ฟอร์มสั่งซื้อ (ปุ่มจริงอยู่ใน sticky bar ด้านล่าง) #}
+    <form method="post" action="{{ url_for('shop.checkout') }}" id="checkoutForm" class="cart-note-form">
+        <div class="form-group">
+            <label>หมายเหตุถึงร้าน (ถ้ามี)</label>
+            <textarea name="note" placeholder="เช่น ที่อยู่จัดส่ง หรือรายละเอียดเพิ่มเติม"></textarea>
+        </div>
+    </form>
+    <a href="{{ url_for('shop.index') }}" class="btn btn-secondary btn-block" style="margin-top:8px;">เลือกสินค้าเพิ่ม</a>
+
+    {# แถบสรุป+สั่งซื้อ ติดขอบล่าง (sticky) แบบ Shopee #}
+    <div class="cart-bar">
+        <label class="cart-check cart-bar-check">
+            <input type="checkbox" id="cartCheckAll2" checked>
+            <span>ทั้งหมด</span>
+        </label>
+        <div class="cart-bar-total">
+            <span class="muted" style="font-size:.78rem;">ยอดรวม</span>
             <span class="cart-total">฿{{ total|money }}</span>
         </div>
-        <form method="post" action="{{ url_for('shop.checkout') }}">
-            <div class="form-group">
-                <label>หมายเหตุถึงร้าน (ถ้ามี)</label>
-                <textarea name="note" placeholder="เช่น ที่อยู่จัดส่ง หรือรายละเอียดเพิ่มเติม"></textarea>
-            </div>
-            <button type="submit" class="btn btn-block">ยืนยันคำสั่งซื้อ</button>
-        </form>
-        <a href="{{ url_for('shop.index') }}" class="btn btn-secondary btn-block" style="margin-top:8px;">เลือกสินค้าเพิ่ม</a>
+        <button type="submit" form="checkoutForm" class="btn cart-bar-btn">
+            ยืนยันคำสั่งซื้อ (<span id="cartSelCount">{{ items|length }}</span>)
+        </button>
     </div>
 </div>
 
@@ -55,8 +76,42 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    var totalEl = document.querySelector(".cart-total");
+    var wrap = document.getElementById("cartWrap");
+    if (!wrap) return;
+    var totalEl = wrap.querySelector(".cart-total");
+    var selCountEl = document.getElementById("cartSelCount");
+    var checkAll = document.getElementById("cartCheckAll");
+    var checkAll2 = document.getElementById("cartCheckAll2");
 
+    function formatMoney(n) {
+        return Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // คำนวณยอดรวม "เฉพาะรายการที่ติ๊กเลือก" ฝั่ง client (ไม่ยิง server)
+    function recalc() {
+        var total = 0, count = 0;
+        wrap.querySelectorAll(".cart-item").forEach(function (item) {
+            var sel = item.querySelector(".js-cart-select");
+            if (sel && sel.checked) {
+                var price = parseFloat(item.dataset.price) || 0;
+                var qty = parseInt(item.querySelector(".cart-qty").value, 10) || 0;
+                total += price * qty;
+                count += 1;
+            }
+        });
+        if (totalEl) totalEl.textContent = "฿" + formatMoney(total);
+        if (selCountEl) selCountEl.textContent = count;
+    }
+
+    function syncCheckAll() {
+        var boxes = wrap.querySelectorAll(".js-cart-select");
+        var allChecked = boxes.length > 0 &&
+            Array.prototype.every.call(boxes, function (b) { return b.checked; });
+        if (checkAll) checkAll.checked = allChecked;
+        if (checkAll2) checkAll2.checked = allChecked;
+    }
+
+    // อัปเดตจำนวน/ลบ ผ่าน server (ส่งเฉพาะที่เปลี่ยน) แล้วอัปเดต badge navbar
     function updateQty(item, newQty) {
         var id = item.dataset.id;
         var fd = new FormData();
@@ -65,28 +120,28 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(function (r) { return r.json(); })
             .then(function (j) {
                 if (!j.ok) return;
+                // อัปเดต badge ตะกร้าบน navbar (รวมถึงกรณีลบ)
+                if (window.setCartBadge) window.setCartBadge(j.cart_count);
                 if (j.removed) {
                     item.style.height = item.offsetHeight + "px";
                     item.classList.add("removing");
                     setTimeout(function () {
                         item.remove();
                         if (j.empty) {
-                            document.getElementById("cartWrap").style.display = "none";
+                            wrap.style.display = "none";
                             document.getElementById("cartEmpty").style.display = "";
-                        }
+                        } else { recalc(); syncCheckAll(); }
                     }, 250);
+                    if (window.showAppToast) window.showAppToast("ลบออกจากตะกร้าแล้ว", true);
                 } else {
                     item.querySelector(".cart-qty").value = j.quantity;
-                    item.querySelector(".cart-subtotal").textContent = formatMoney(j.subtotal);
+                    recalc();
                 }
-                if (totalEl) totalEl.textContent = "฿" + formatMoney(j.total);
             });
     }
-    function formatMoney(n) {
-        return Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
 
-    document.addEventListener("click", function (e) {
+    // คลิก +/- / ลบ
+    wrap.addEventListener("click", function (e) {
         var item = e.target.closest(".cart-item");
         if (!item) return;
         var input = item.querySelector(".cart-qty");
@@ -94,12 +149,44 @@ document.addEventListener("DOMContentLoaded", function () {
         var max = parseInt(item.dataset.stock, 10) || 999;
         if (e.target.closest(".js-cart-plus")) {
             if (cur < max) updateQty(item, cur + 1);
+            else if (window.showAppToast) window.showAppToast("สินค้ามีไม่พอ", false);
         } else if (e.target.closest(".js-cart-minus")) {
-            updateQty(item, cur - 1);  // ถ้าถึง 0 server จะลบให้
+            if (cur > 1) updateQty(item, cur - 1);
+            else if (confirm("ต้องการลบสินค้านี้ออกจากตะกร้า?")) updateQty(item, 0);
         } else if (e.target.closest(".js-cart-remove")) {
-            updateQty(item, 0);
+            if (confirm("ต้องการลบสินค้านี้ออกจากตะกร้า?")) updateQty(item, 0);
         }
     });
+
+    // ติ๊กเลือกรายการ -> คำนวณยอดใหม่
+    wrap.addEventListener("change", function (e) {
+        if (e.target.classList.contains("js-cart-select")) {
+            syncCheckAll();
+            recalc();
+        }
+    });
+
+    // เลือกทั้งหมด (มี 2 จุด: หัวตาราง + แถบล่าง)
+    function toggleAll(checked) {
+        wrap.querySelectorAll(".js-cart-select").forEach(function (b) { b.checked = checked; });
+        if (checkAll) checkAll.checked = checked;
+        if (checkAll2) checkAll2.checked = checked;
+        recalc();
+    }
+    if (checkAll) checkAll.addEventListener("change", function () { toggleAll(this.checked); });
+    if (checkAll2) checkAll2.addEventListener("change", function () { toggleAll(this.checked); });
+
+    // กันกดสั่งซื้อตอนไม่ได้เลือกอะไร
+    var form = document.getElementById("checkoutForm");
+    if (form) form.addEventListener("submit", function (e) {
+        var anySel = wrap.querySelector(".js-cart-select:checked");
+        if (!anySel) {
+            e.preventDefault();
+            if (window.showAppToast) window.showAppToast("กรุณาเลือกสินค้าที่ต้องการสั่งซื้อ", false);
+        }
+    });
+
+    recalc();
 });
 </script>
 {% else %}

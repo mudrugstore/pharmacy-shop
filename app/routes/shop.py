@@ -206,6 +206,11 @@ def cart_add(product_id):
 @bp.route("/cart/update/<int:product_id>", methods=["POST"])
 @login_required
 def cart_update(product_id):
+    """
+    ปรับจำนวน/ลบสินค้าในตะกร้า (ตะกร้าอยู่ใน session จึงไม่ต้องดึงทั้งตะกร้าจาก DB)
+    ยอดรวมคำนวณฝั่ง client จากราคาที่โหลดไว้แล้ว -> ที่นี่ส่งกลับเฉพาะข้อมูลที่จำเป็น
+    ลด query: เดิมยิง 2 ครั้ง (เช็กสต็อก + ดึงทั้งตะกร้า) เหลือ 1 ครั้ง (เช็กสต็อกเฉพาะตัวที่เพิ่ม)
+    """
     from flask import jsonify
     qty = request.form.get("quantity", type=int)
     if qty is None:
@@ -214,32 +219,26 @@ def cart_update(product_id):
     cart = _get_cart()
     key = str(product_id)
     removed = False
+    qty_now = 0
     if key in cart:
         if qty <= 0:
             cart.pop(key)
             removed = True
         else:
+            # ดึงสต็อกเฉพาะสินค้าที่กำลังปรับ (query เดียว) เพื่อตัดไม่ให้เกินสต็อก
             product = db.query("SELECT stock FROM products WHERE id = %s", (product_id,), fetchone=True)
             max_stock = product["stock"] if product else qty
             cart[key] = min(qty, max_stock)
+            qty_now = cart[key]
         _save_cart(cart)
 
     if is_ajax:
-        items, total = _build_cart_items(_get_cart())
-        qty_now = 0
-        subtotal = 0
-        for it in items:
-            if it["id"] == product_id:
-                qty_now = it["quantity"]
-                subtotal = float(it["subtotal"])
         return jsonify({
             "ok": True,
-            "removed": removed or qty_now == 0,
+            "removed": removed,
             "quantity": qty_now,
-            "subtotal": subtotal,
-            "total": float(total),
-            "cart_count": sum(_get_cart().values()),
-            "empty": len(items) == 0,
+            "cart_count": sum(cart.values()),
+            "empty": len(cart) == 0,
         })
     return redirect(url_for("shop.cart"))
 
