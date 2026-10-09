@@ -55,14 +55,17 @@ def index():
     categories = [] if is_ajax else _get_categories()
 
     # whitelist การเรียงลำดับ (กัน SQL injection — ไม่เอา input ตรงไปใส่ ORDER BY)
+    # ทุกตัวเลือกดันสินค้าที่ "มีสต็อก" ขึ้นก่อนเสมอ ((p.stock > 0) DESC) ตามด้วยเกณฑ์ที่เลือก
     sort_map = {
-        "newest": "p.created_at DESC",      # รายการใหม่-เก่า (ค่าเริ่มต้น)
+        "newest": "p.created_at DESC",      # รายการใหม่-เก่า
         "oldest": "p.created_at ASC",       # รายการเก่า-ใหม่
         "price_low": "p.price ASC, p.name", # ราคาต่ำ-สูง
         "price_high": "p.price DESC, p.name",# ราคาสูง-ต่ำ
         "name": "p.name",                   # ชื่อ ก-ฮ
     }
-    order_by = sort_map.get(sort, "p.created_at DESC")
+    # ค่าตั้งต้น "recommended" = มีของก่อน แล้วเรียงรายการใหม่สุด
+    secondary = sort_map.get(sort, "p.created_at DESC")
+    order_by = f"(p.stock > 0) DESC, {secondary}"
 
     # สร้างเงื่อนไขแบบ dynamic (ใส่ prefix p. ให้ชัดเจนตั้งแต่ต้น)
     where = ["p.is_active = TRUE", "p.is_preorder = FALSE"]
@@ -88,7 +91,7 @@ def index():
             "shop/_product_grid.html",
             products=products,
             search_query=q,
-            current_sort=sort or "newest",
+            current_sort=sort or "recommended",
         )
 
     # แบนเนอร์โฆษณา (แสดงเฉพาะหน้าแรก ไม่แสดงตอนค้นหา/กรองหมวด) — ใช้ cache
@@ -103,7 +106,7 @@ def index():
         selected_category=category_id,
         search_query=q,
         banners=banners,
-        current_sort=sort or "newest",
+        current_sort=sort or "recommended",
     )
 
 

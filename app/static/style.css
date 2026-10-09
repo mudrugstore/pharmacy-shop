@@ -175,6 +175,39 @@ body > header {
 }
 .section-bar-title { font-size: 1.1rem; font-weight: 600; color: var(--primary); }
 
+/* ===== ปุ่มเรียงลำดับแบบ icon เล็กๆ ===== */
+.sort-filter { position: relative; }
+.sort-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #fff; color: #555;
+    border: 1px solid #e3e3e3; border-radius: 999px;
+    padding: 6px 12px; font-size: .85rem; font-family: inherit;
+    cursor: pointer; transition: border-color .15s, color .15s;
+}
+.sort-btn:hover { border-color: var(--primary); color: var(--primary); }
+.sort-btn svg { flex: none; }
+.sort-btn-label { white-space: nowrap; }
+.sort-menu {
+    position: absolute; top: calc(100% + 6px); right: 0; z-index: 30;
+    background: #fff; border: 1px solid #eee; border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.12);
+    padding: 6px; min-width: 180px;
+    display: flex; flex-direction: column; gap: 2px;
+}
+.sort-menu[hidden] { display: none; }
+.sort-opt {
+    text-align: left; background: none; border: none;
+    padding: 9px 12px; border-radius: 8px; cursor: pointer;
+    font-family: inherit; font-size: .9rem; color: #444;
+}
+.sort-opt:hover { background: #f6f6f6; }
+.sort-opt.active { background: var(--primary); color: #fff; font-weight: 500; }
+/* จอมือถือ: ซ่อน label เหลือแต่ icon ให้กะทัดรัด */
+@media (max-width: 480px) {
+    .sort-btn-label { display: none; }
+    .sort-btn { padding: 7px; }
+}
+
 /* ===== Grid สินค้า (แบบ Shopee) ===== */
 .grid {
     display: grid;

@@ -62,7 +62,7 @@
     // ค่า sort ปัจจุบันจาก dropdown (ถ้ามี)
     function currentSort() {
         var sel = block.querySelector(".js-sort");
-        return sel ? sel.value : "newest";
+        return sel ? sel.value : "recommended";
     }
     function buildUrl() {
         var params = [];
@@ -94,10 +94,29 @@
         });
     });
 
-    // เปลี่ยนการเรียงลำดับ (dropdown อยู่ในบล็อกที่ reload — ใช้ delegation)
-    block.addEventListener("change", function (e) {
-        if (e.target && e.target.classList.contains("js-sort")) {
+    // เมนูเรียงลำดับแบบ icon (อยู่ในบล็อกที่ reload — ใช้ delegation)
+    block.addEventListener("click", function (e) {
+        // เปิด/ปิดเมนู
+        var toggle = e.target.closest(".js-sort-toggle");
+        if (toggle) {
+            var menu = block.querySelector(".js-sort-menu");
+            if (menu) menu.hidden = !menu.hidden;
+            return;
+        }
+        // เลือกตัวเลือก -> อัปเดต hidden input แล้วโหลดใหม่
+        var opt = e.target.closest(".js-sort-opt");
+        if (opt) {
+            var hidden = block.querySelector(".js-sort");
+            if (hidden) hidden.value = opt.dataset.value;
             loadGrid(buildUrl(), true);
+            return;
+        }
+    });
+    // คลิกนอกเมนูให้ปิด
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest(".sort-filter")) {
+            var menu = block.querySelector(".js-sort-menu");
+            if (menu && !menu.hidden) menu.hidden = true;
         }
     });
 
