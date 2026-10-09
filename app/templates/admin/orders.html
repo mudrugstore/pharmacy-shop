@@ -18,6 +18,7 @@
                 <td data-label="สถานะ">
                     {% if o.status == 'ยกเลิกโดยลูกค้า' %}<span class="pill pill-danger">{{ o.status }}</span>
                     {% elif o.status == 'เสร็จสิ้น' %}<span class="pill pill-ok">{{ o.status }}</span>
+                    {% elif o.status == 'รอดำเนินการ' %}<span class="pill pill-normal">{{ o.status }}</span><span class="nav-dot" title="รายการใหม่ที่ต้องจัดการ"></span>
                     {% else %}<span class="pill pill-normal">{{ o.status }}</span>{% endif %}
                 </td>
                 <td data-label="วันที่">{{ o.created_at|thaidt }}</td>

@@ -21,6 +21,7 @@
                         <span class="pill pill-danger">ยกเลิกโดยลูกค้า</span>
                     {% else %}
                     <form method="post" action="{{ url_for('admin.preorder_status', request_id=r.id) }}" class="row-actions">
+                        {% if r.status == 'รอติดต่อกลับ' %}<span class="nav-dot" title="รายการใหม่ที่ต้องติดต่อกลับ"></span>{% endif %}
                         <select name="status">
                             {% for s in ['รอติดต่อกลับ', 'ติดต่อแล้ว', 'ยืนยันแล้ว', 'ยกเลิก'] %}
                                 <option value="{{ s }}" {% if r.status == s %}selected{% endif %}>{{ s }}</option>

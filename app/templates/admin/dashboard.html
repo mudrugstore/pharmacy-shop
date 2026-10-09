@@ -12,9 +12,11 @@
         <div class="stat-num">{{ stats.categories }}</div><div class="stat-label">หมวดหมู่</div>
     </a>
     <a href="{{ url_for('admin.orders') }}" class="stat-card">
+        {% if nav_badges.admin_orders %}<span class="nav-dot stat-dot"></span>{% endif %}
         <div class="stat-num">{{ stats.orders }}</div><div class="stat-label">คำสั่งซื้อ</div>
     </a>
     <a href="{{ url_for('admin.preorders') }}" class="stat-card">
+        {% if nav_badges.admin_preorders %}<span class="nav-dot stat-dot"></span>{% endif %}
         <div class="stat-num">{{ stats.preorders }}</div><div class="stat-label">พรีออเดอร์รอติดต่อ</div>
     </a>
     <a href="{{ url_for('admin.users') }}" class="stat-card">
