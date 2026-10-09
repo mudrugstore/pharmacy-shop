@@ -639,6 +639,16 @@ a.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover)
 .cart-item.updating .cart-stepper { opacity: .5; pointer-events: none; }
 /* ยอดรวมด้านล่างกำลังอัปเดต */
 .cart-total.calculating { opacity: .55; }
+
+/* spinner บนปุ่ม submit ตอนกำลังบันทึก (ปุ่มเปลี่ยนสถานะ admin ฯลฯ) */
+.btn-loading { opacity: .85; cursor: progress; }
+.btn-spinner {
+    display: inline-block; width: 13px; height: 13px; vertical-align: -1px; margin-right: 6px;
+    border: 2px solid rgba(255,255,255,.5); border-top-color: #fff;
+    border-radius: 50%; animation: spin .7s linear infinite;
+}
+/* ปุ่ม secondary (พื้นอ่อน) ใช้ spinner สีเข้มให้เห็นชัด */
+.btn-secondary .btn-spinner { border-color: rgba(0,0,0,.2); border-top-color: var(--primary); }
 .cart-stepper { border-radius: 999px; }
 .cart-stepper button { width: 34px; font-size: 1.1rem; }
 .cart-stepper .cart-qty { width: 40px; border: none; border-left: 1.5px solid #e0e0e0; border-right: 1.5px solid #e0e0e0; text-align: center; padding: 8px 2px; }
