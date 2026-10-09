@@ -160,45 +160,70 @@ document.addEventListener("click", function (e) {
     var shown = false;
 
     var safetyTimer;
+    var shownAt = 0;
     function showLoader() {
         if (shown) return;
         shown = true;
+        shownAt = Date.now();
         progress.classList.add("active");
-        loader.classList.add("show");   // ขึ้นทันที (มือถือมักไม่ทัน setTimeout)
-        // Safari/iOS จะ freeze หน้าทันทีเมื่อเริ่ม navigate ทำให้ overlay ที่เพิ่งเปลี่ยน
-        // display ไม่ถูก paint -> บังคับ reflow ให้ paint ทันทีก่อน browser ออกจากหน้า
+        loader.classList.add("show");
+        // บังคับ reflow ให้ overlay ถูก paint ทันที (iOS/Safari freeze หน้าตอน navigate)
         void loader.offsetHeight;
         // กันเหนียว: ถ้าไม่เปลี่ยนหน้าภายใน 8 วิ ให้ซ่อน loader เอง (กันค้างถาวร)
         clearTimeout(safetyTimer);
-        safetyTimer = setTimeout(hideLoader, 8000);
+        safetyTimer = setTimeout(forceHide, 6000);
     }
-    function hideLoader() {
-        shown = false;
-        clearTimeout(safetyTimer);
-        loader.classList.remove("show");
-        progress.classList.remove("active");
-        // คืนสภาพปุ่ม submit ที่กำลัง "กำลังบันทึก..." (กรณีกด back/bfcache หรือ safety timeout)
+    function restoreButtons() {
         document.querySelectorAll("button.btn-loading").forEach(function (btn) {
             if (btn.dataset.label !== undefined) btn.innerHTML = btn.dataset.label;
             btn.classList.remove("btn-loading");
             btn.disabled = false;
         });
     }
+    function forceHide() {
+        shown = false;
+        clearTimeout(safetyTimer);
+        loader.classList.remove("show");
+        progress.classList.remove("active");
+        restoreButtons();
+    }
+    // ซ่อนแบบเคารพเวลาแสดงขั้นต่ำ ~450ms เพื่อให้ "เห็น" loading แน่นอน
+    // (มือถือ + หน้า admin เบา โหลดเร็วมากจน overlay วูบหายจนไม่ทันเห็น)
+    function hideLoader() {
+        if (!shown) { restoreButtons(); return; }
+        var elapsed = Date.now() - shownAt;
+        var minShow = 450;
+        if (elapsed >= minShow) { forceHide(); }
+        else { setTimeout(forceHide, minShow - elapsed); }
+    }
 
-    // คลิก/แตะลิงก์ภายในเว็บ
-    document.addEventListener("click", function (e) {
-        if (e.defaultPrevented) return;   // ถูกยกเลิกไปแล้ว ไม่ต้องขึ้น loader
-        var a = e.target.closest("a");
-        if (!a) return;
-        if (a.classList.contains("js-cat")) return;  // หมวดหมู่ใช้ AJAX ไม่ต้องขึ้น loader เต็มจอ
-        if (a.classList.contains("js-product-open")) return;  // เปิดรายละเอียดเป็น popup ไม่โหลดหน้าใหม่
+    // ตรวจว่าลิงก์ควรขึ้น loader ไหม (ลิงก์ภายในเว็บที่เปลี่ยนหน้าจริง)
+    function isNavLink(a) {
+        if (!a) return false;
+        if (a.classList.contains("js-cat")) return false;        // หมวดหมู่ใช้ AJAX
+        if (a.classList.contains("js-product-open")) return false; // เปิด popup
         var href = a.getAttribute("href") || "";
-        if (!href || href.charAt(0) === "#") return;
-        if (href.indexOf("javascript:") === 0) return;
-        if (a.target === "_blank" || a.hasAttribute("download")) return;
+        if (!href || href.charAt(0) === "#") return false;
+        if (href.indexOf("javascript:") === 0) return false;
+        if (a.target === "_blank" || a.hasAttribute("download")) return false;
+        if (a.host && a.host !== window.location.host) return false;
+        return true;
+    }
+
+    // แตะ/คลิกลิงก์ภายในเว็บ -> ขึ้น loader
+    // ใช้ทั้ง pointerdown (มือถือ: มาก่อน navigate ทำให้ overlay มีเวลา paint) และ click (desktop/คีย์บอร์ด)
+    function onLinkActivate(e) {
+        if (e.defaultPrevented) return;
         if (e.ctrlKey || e.metaKey || e.shiftKey) return;  // เปิดแท็บใหม่
-        if (a.host && a.host !== window.location.host) return;  // ลิงก์นอกเว็บ
-        showLoader();
+        if (e.type === "pointerdown" && e.button && e.button !== 0) return;  // คลิกขวา/กลาง
+        var a = e.target.closest("a");
+        if (isNavLink(a)) showLoader();
+    }
+    document.addEventListener("pointerdown", onLinkActivate);
+    document.addEventListener("click", onLinkActivate);
+    // ถ้าแตะลิงก์แล้วยกเลิก (เลื่อนจอ/แตะพลาด) โดยไม่ได้เปลี่ยนหน้า -> ซ่อน loader
+    document.addEventListener("pointercancel", function () {
+        if (shown) forceHide();
     });
 
     // submit form (ค้นหา/สั่งซื้อ/บันทึก) — ข้ามฟอร์มที่เป็น AJAX (จัดการ loading เอง)
