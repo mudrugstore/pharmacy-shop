@@ -121,12 +121,27 @@ document.addEventListener("DOMContentLoaded", function () {
         var id = item.dataset.id;
         var fd = new FormData();
         fd.append("quantity", newQty);
+        // แสดง loading เล็กๆ ระหว่างคำนวณราคาใหม่ (รอ server ตอบ)
+        var isRemoving = newQty <= 0;
+        var lineEl = item.querySelector(".cart-line-total");
+        var prevLine = lineEl ? lineEl.innerHTML : "";
+        if (!isRemoving) {
+            item.dataset.busy = "1";
+            item.classList.add("updating");
+            if (lineEl) lineEl.innerHTML = '<span class="mini-spinner"></span>';
+            if (totalEl) totalEl.classList.add("calculating");
+        }
+        function clearLoading() {
+            item.classList.remove("updating");
+            if (totalEl) totalEl.classList.remove("calculating");
+        }
         fetch("/cart/update/" + id, { method: "POST", body: fd, headers: { "X-Requested-With": "fetch" } })
             .then(function (r) { return r.json(); })
             .then(function (j) {
-                if (!j.ok) return;
+                if (!j.ok) { clearLoading(); if (lineEl) lineEl.innerHTML = prevLine; return; }
                 // อัปเดต badge ตะกร้าบน navbar (รวมถึงกรณีลบ)
                 if (window.setCartBadge) window.setCartBadge(j.cart_count);
+                clearLoading();
                 if (j.removed) {
                     item.style.height = item.offsetHeight + "px";
                     item.classList.add("removing");
@@ -142,13 +157,23 @@ document.addEventListener("DOMContentLoaded", function () {
                     item.querySelector(".cart-qty").value = j.quantity;
                     recalc();
                 }
-            });
+            })
+            .catch(function () {
+                // network ล้มเหลว -> คืนราคาเดิม + เลิก loading
+                clearLoading();
+                if (lineEl) lineEl.innerHTML = prevLine;
+                if (window.showAppToast) window.showAppToast("เชื่อมต่อไม่สำเร็จ", false);
+            })
+            .finally(function () { item.dataset.busy = ""; });
     }
 
     // คลิก +/- / ลบ
     wrap.addEventListener("click", function (e) {
         var item = e.target.closest(".cart-item");
         if (!item) return;
+        // กันกดรัวระหว่างรอ server คำนวณราคา (ไม่ให้ยิงซ้อน)
+        var isStepper = e.target.closest(".js-cart-plus") || e.target.closest(".js-cart-minus");
+        if (isStepper && item.dataset.busy === "1") return;
         var input = item.querySelector(".cart-qty");
         var cur = parseInt(input.value, 10) || 0;
         var max = parseInt(item.dataset.stock, 10) || 999;

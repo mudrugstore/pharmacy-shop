@@ -627,7 +627,16 @@ a.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover)
 .cart-unit { font-size: .78rem; }
 .cart-stock-left { color: #e67e22; white-space: nowrap; }
 .cart-item-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
-.cart-item-line { color: var(--primary); font-weight: 700; font-size: 1.15rem; }
+.cart-item-line { color: var(--primary); font-weight: 700; font-size: 1.15rem; position: relative; }
+/* spinner เล็กตอนคำนวณราคาใหม่ (รอ server ตอบ) */
+.mini-spinner {
+    display: inline-block; width: 15px; height: 15px; vertical-align: -2px;
+    border: 2px solid var(--primary-light); border-top-color: var(--primary);
+    border-radius: 50%; animation: spin .7s linear infinite;
+}
+.cart-item.updating .cart-stepper { opacity: .5; pointer-events: none; }
+/* ยอดรวมด้านล่างกำลังอัปเดต */
+.cart-total.calculating { opacity: .55; }
 .cart-stepper { border-radius: 999px; }
 .cart-stepper button { width: 34px; font-size: 1.1rem; }
 .cart-stepper .cart-qty { width: 40px; border: none; border-left: 1.5px solid #e0e0e0; border-right: 1.5px solid #e0e0e0; text-align: center; padding: 8px 2px; }
