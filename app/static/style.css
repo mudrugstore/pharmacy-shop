@@ -785,11 +785,13 @@ a.stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover)
     100% { width: 95%; }
 }
 
-/* overlay spinner เต็มจอ (ขึ้นทันทีตอนเปลี่ยนหน้า) */
+/* overlay spinner เต็มจอ (ขึ้นทันทีตอนเปลี่ยนหน้า)
+   ไม่ใช้ backdrop-filter: blur เพราะ iOS Safari ต้องคำนวณ blur ก่อน paint
+   ซึ่งมักถูกข้ามตอน browser กำลัง navigate -> overlay ไม่ทันขึ้น
+   ใช้พื้นหลังทึบขึ้นแทน (paint เร็ว เห็นชัดทุกเครื่อง) */
 .page-loader {
     position: fixed; inset: 0; z-index: 1999;
-    background: rgba(255,255,255,.9);
-    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+    background: rgba(255,255,255,.92);
     display: none; align-items: center; justify-content: center;
 }
 .page-loader.show { display: flex; }

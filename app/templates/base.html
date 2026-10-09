@@ -165,6 +165,9 @@ document.addEventListener("click", function (e) {
         shown = true;
         progress.classList.add("active");
         loader.classList.add("show");   // ขึ้นทันที (มือถือมักไม่ทัน setTimeout)
+        // Safari/iOS จะ freeze หน้าทันทีเมื่อเริ่ม navigate ทำให้ overlay ที่เพิ่งเปลี่ยน
+        // display ไม่ถูก paint -> บังคับ reflow ให้ paint ทันทีก่อน browser ออกจากหน้า
+        void loader.offsetHeight;
         // กันเหนียว: ถ้าไม่เปลี่ยนหน้าภายใน 8 วิ ให้ซ่อน loader เอง (กันค้างถาวร)
         clearTimeout(safetyTimer);
         safetyTimer = setTimeout(hideLoader, 8000);
@@ -210,13 +213,19 @@ document.addEventListener("click", function (e) {
         if (f.classList.contains("js-pre-submit")) return; // ฟอร์มสั่งจองพรีออเดอร์ (AJAX)
 
         // feedback ตรงปุ่ม submit ที่กด: แสดง spinner เล็ก + ข้อความ + กันกดซ้ำ
-        // (ชัดเจนกว่า overlay เต็มจอ โดยเฉพาะปุ่มเปลี่ยนสถานะในตาราง admin)
-        var btn = (e.submitter) || f.querySelector('button[type="submit"], button:not([type])');
+        // (ชัดเจนกว่า overlay เต็มจอ โดยเฉพาะปุ่มเปลี่ยนสถานะในตาราง admin บนมือถือ)
+        // e.submitter ไม่รองรับบน Safari เก่า -> fallback เป็นปุ่ม submit ตัวแรกในฟอร์ม
+        var btn = e.submitter;
+        if (!btn || btn.tagName !== "BUTTON") {
+            btn = f.querySelector('button[type="submit"], button:not([type])');
+        }
         if (btn && !btn.disabled && btn.tagName === "BUTTON") {
             btn.dataset.label = btn.innerHTML;
+            btn.style.minWidth = btn.offsetWidth + "px";  // กันปุ่มหดตอนเปลี่ยนข้อความ
             btn.disabled = true;
             btn.classList.add("btn-loading");
             btn.innerHTML = '<span class="btn-spinner"></span>กำลังบันทึก...';
+            void btn.offsetHeight;   // บังคับ paint ปุ่มทันที (Safari freeze ตอน navigate)
         }
         showLoader();
     });
