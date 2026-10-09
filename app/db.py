@@ -112,7 +112,10 @@ def query(sql, params=None, fetchone=False, fetchall=False, commit=False):
                     result = cur.fetchone()
                 elif fetchall:
                     result = cur.fetchall()
-            if shared is None:
+            # commit=True -> ยืนยันการเขียนทันที (durability) ทั้ง shared และ temporary connection
+            # (เดิม shared connection ไม่เคย commit จนกว่าจะ teardown ทำให้ write อาจถูก
+            #  rollback ทิ้งถ้ามี exception ภายหลังใน request เดียวกัน)
+            if commit or shared is None:
                 conn.commit()
             return result
         except (psycopg.OperationalError, psycopg.InterfaceError):

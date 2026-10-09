@@ -74,14 +74,15 @@ def my_requests():
     """ประวัติการสั่งจองพรีออเดอร์ของลูกค้า"""
     user = get_current_user()
     rows = db.query(
-        """SELECT id, product_name, quantity, status, created_at
-           FROM preorder_requests WHERE user_id = %s ORDER BY created_at DESC""",
+        """SELECT id, product_name, quantity, status, created_at, seen_by_user
+           FROM preorder_requests WHERE user_id = %s ORDER BY created_at DESC LIMIT 100""",
         (user["id"],),
         fetchall=True,
     )
-    # เคลียร์ badge: ถือว่าลูกค้าเห็นการอัปเดตแล้ว
-    db.query("UPDATE preorder_requests SET seen_by_user = TRUE WHERE user_id = %s AND seen_by_user = FALSE",
-             (user["id"],), commit=True)
+    # เคลียร์ badge เฉพาะเมื่อมีรายการที่ยังไม่ถูกเห็นจริง (เลี่ยง write ที่ไม่จำเป็น)
+    if any(not r["seen_by_user"] for r in rows):
+        db.query("UPDATE preorder_requests SET seen_by_user = TRUE WHERE user_id = %s AND seen_by_user = FALSE",
+                 (user["id"],), commit=True)
     return render_template("preorder/my_requests.html", requests=rows)
 
 

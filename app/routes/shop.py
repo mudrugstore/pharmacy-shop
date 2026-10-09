@@ -274,8 +274,11 @@ def checkout():
             with conn.cursor() as cur:
                 ids = [int(pid) for pid in cart.keys()]
                 # ล็อกแถวสินค้าเพื่อกันการตัดสต็อกพร้อมกัน
+                # กรอง is_active + ไม่ใช่พรีออเดอร์ ตั้งแต่ query เพื่อกันสินค้าที่ถูกปิดการขาย/
+                # เปลี่ยนเป็นพรีออเดอร์ แต่ยังค้างใน session cart เล็ดลอดไปสั่งซื้อได้
                 cur.execute(
-                    "SELECT id, name, price, stock FROM products WHERE id = ANY(%s) FOR UPDATE",
+                    "SELECT id, name, price, stock FROM products "
+                    "WHERE id = ANY(%s) AND is_active = TRUE AND is_preorder = FALSE FOR UPDATE",
                     (ids,),
                 )
                 rows = cur.fetchall()
@@ -287,7 +290,7 @@ def checkout():
                     pid = int(pid_str)
                     p = prod_map.get(pid)
                     if not p:
-                        raise ValueError("มีสินค้าในตะกร้าที่ไม่พบแล้ว")
+                        raise ValueError("มีสินค้าในตะกร้าที่ไม่พร้อมขายแล้ว กรุณานำออกจากตะกร้า")
                     if p["stock"] < qty:
                         raise ValueError(f"สินค้า '{p['name']}' เหลือไม่พอ (คงเหลือ {p['stock']})")
 
@@ -334,14 +337,15 @@ def checkout():
 def orders():
     user = get_current_user()
     rows = db.query(
-        "SELECT id, total, status, created_at FROM orders WHERE user_id = %s "
+        "SELECT id, total, status, created_at, seen_by_user FROM orders WHERE user_id = %s "
         "ORDER BY created_at DESC LIMIT 100",
         (user["id"],),
         fetchall=True,
     )
-    # เคลียร์ badge: ถือว่าลูกค้าเห็นการอัปเดตสถานะแล้ว
-    db.query("UPDATE orders SET seen_by_user = TRUE WHERE user_id = %s AND seen_by_user = FALSE",
-             (user["id"],), commit=True)
+    # เคลียร์ badge เฉพาะเมื่อมีรายการที่ยังไม่ถูกเห็นจริง (เลี่ยง write ที่ไม่จำเป็นทุกครั้ง)
+    if any(not r["seen_by_user"] for r in rows):
+        db.query("UPDATE orders SET seen_by_user = TRUE WHERE user_id = %s AND seen_by_user = FALSE",
+                 (user["id"],), commit=True)
     return render_template("shop/orders.html", orders=rows)
 
 
