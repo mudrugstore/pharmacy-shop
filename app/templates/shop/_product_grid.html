@@ -25,6 +25,7 @@
             <span class="sort-btn-label">{{ sort_labels.get(current_sort, 'แนะนำ') }}</span>
         </button>
         <div class="sort-menu js-sort-menu" hidden>
+            <div class="sort-menu-head">เรียงตาม</div>
             {% for val, label in sort_labels.items() %}
             <button type="button" class="sort-opt js-sort-opt {% if current_sort == val %}active{% endif %}"
                     data-value="{{ val }}">{{ label }}</button>

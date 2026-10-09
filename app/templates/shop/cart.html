@@ -25,18 +25,20 @@
                 {% else %}<div class="no-img" style="width:100%;height:100%;">&#128138;</div>{% endif %}
             </div>
             <div class="cart-item-info">
-                <div class="cart-item-name">{{ it.name }}</div>
-                <div class="cart-item-price">฿<span class="cart-unit-price">{{ it.price|money }}</span></div>
+                <div class="cart-item-top">
+                    <div class="cart-item-name">{{ it.name }}</div>
+                    <button type="button" class="cart-remove js-cart-remove" title="ลบ" aria-label="ลบสินค้า">&times;</button>
+                </div>
+                <div class="muted cart-unit">฿{{ it.price|money }} / ชิ้น · <span class="cart-stock-left">เหลือ {{ it.stock }} ชิ้น</span></div>
                 <div class="cart-item-foot">
+                    <div class="cart-item-line">฿<span class="cart-line-total">{{ it.subtotal|money }}</span></div>
                     <div class="qty-stepper cart-stepper">
                         <button type="button" class="js-cart-minus" aria-label="ลด">&minus;</button>
                         <input type="number" class="cart-qty" value="{{ it.quantity }}" min="0" max="{{ it.stock }}" readonly>
                         <button type="button" class="js-cart-plus" aria-label="เพิ่ม">+</button>
                     </div>
-                    <span class="cart-stock-left">เหลือ {{ it.stock }} ชิ้น</span>
                 </div>
             </div>
-            <button type="button" class="cart-remove js-cart-remove" title="ลบ" aria-label="ลบสินค้า">&times;</button>
         </div>
         {% endfor %}
     </div>
@@ -91,10 +93,13 @@ document.addEventListener("DOMContentLoaded", function () {
     function recalc() {
         var total = 0, count = 0;
         wrap.querySelectorAll(".cart-item").forEach(function (item) {
+            var price = parseFloat(item.dataset.price) || 0;
+            var qty = parseInt(item.querySelector(".cart-qty").value, 10) || 0;
+            // อัปเดตราคารวมต่อรายการเสมอ (price x qty)
+            var lineEl = item.querySelector(".cart-line-total");
+            if (lineEl) lineEl.textContent = formatMoney(price * qty);
             var sel = item.querySelector(".js-cart-select");
             if (sel && sel.checked) {
-                var price = parseFloat(item.dataset.price) || 0;
-                var qty = parseInt(item.querySelector(".cart-qty").value, 10) || 0;
                 total += price * qty;
                 count += 1;
             }

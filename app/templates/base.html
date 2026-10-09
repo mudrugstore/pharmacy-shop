@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{% block title %}{{ store_name }}{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -236,21 +236,32 @@ document.addEventListener("click", function (e) {
     }
     // ให้หน้าตะกร้าอัปเดต badge ได้ (เช่น ลด/ลบสินค้า) โดยไม่ต้องเล่น animation bump
     window.setCartBadge = setBadge;
-    // รูปบินเข้าตะกร้า (ถ้ามี element รูปต้นทาง)
+    // รูปบินเข้าตะกร้า — รองรับทั้งกรณีมีรูปและไม่มีรูป (บินจุดสีธีมแทน)
     function flyToCart(fromImg) {
-        if (!fromImg || !cartLink) return;
-        var s = fromImg.getBoundingClientRect();
+        if (!cartLink) return;
         var t = cartLink.getBoundingClientRect();
-        var fly = document.createElement("img");
-        fly.src = fromImg.src;
-        fly.className = "fly-img";
-        fly.style.left = s.left + "px"; fly.style.top = s.top + "px";
-        fly.style.width = s.width + "px"; fly.style.height = s.height + "px";
+        var fly;
+        var hasImg = fromImg && fromImg.src && fromImg.offsetParent !== null;
+        if (hasImg) {
+            var s = fromImg.getBoundingClientRect();
+            fly = document.createElement("img");
+            fly.src = fromImg.src;
+            fly.className = "fly-img";
+            fly.style.left = s.left + "px"; fly.style.top = s.top + "px";
+            fly.style.width = s.width + "px"; fly.style.height = s.height + "px";
+        } else {
+            // ไม่มีรูป (เช่น สินค้าไม่มีภาพ) -> บินจุดกลมสีธีมจากกลางจอ
+            fly = document.createElement("div");
+            fly.className = "fly-img fly-dot";
+            fly.style.left = (window.innerWidth / 2 - 25) + "px";
+            fly.style.top = (window.innerHeight / 2 - 25) + "px";
+            fly.style.width = "50px"; fly.style.height = "50px";
+        }
         document.body.appendChild(fly);
         requestAnimationFrame(function () {
             fly.style.left = (t.left + t.width / 2) + "px";
             fly.style.top = (t.top + t.height / 2) + "px";
-            fly.style.width = "20px"; fly.style.height = "20px"; fly.style.opacity = "0.3";
+            fly.style.width = "18px"; fly.style.height = "18px"; fly.style.opacity = "0.2";
         });
         setTimeout(function () { fly.remove(); }, 650);
     }
@@ -276,13 +287,20 @@ document.addEventListener("click", function (e) {
         flyToCart(imgEl);          // เริ่ม animation ทันที (ไม่รอ server)
         closeProductModal();       // ปิด popup ทันที ให้เลือกสินค้าอื่นต่อได้เลย
 
+        // แสดง toast + เด้ง badge ทันที (optimistic) ไม่รอ network — มือถือจะเห็นผลตอบรับไว
+        showToast("เพิ่มลงตะกร้าแล้ว", true);
+        if (cartLink) {
+            cartLink.classList.remove("cart-bump");
+            void cartLink.offsetWidth;
+            cartLink.classList.add("cart-bump");
+        }
+
         if (btn) btn.disabled = true;
         fetch(form.action, { method: "POST", body: new FormData(form), headers: { "X-Requested-With": "fetch" } })
             .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
             .then(function (res) {
                 if (res.ok && res.j.ok) {
-                    bumpCart(res.j.cart_count);
-                    showToast("เพิ่มลงตะกร้าแล้ว", true);
+                    setBadge(res.j.cart_count);   // ยืนยันจำนวนจริงจาก server
                 } else {
                     showToast((res.j && res.j.error) || "เพิ่มไม่สำเร็จ", false);
                 }
