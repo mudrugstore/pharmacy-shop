@@ -87,16 +87,20 @@ document.addEventListener("DOMContentLoaded", function () {
         el.desc.textContent = d.desc || "ไม่มีรายละเอียด";
         if (loggedIn) {
             el.action.innerHTML =
-                '<form method="post" action="/preorder/request/' + d.id + '" class="js-pre-submit">' +
-                '<label style="display:block;font-size:.85rem;margin-bottom:4px;">จำนวน</label>' +
-                '<div class="qty-stepper" style="margin-bottom:12px;">' +
+                '<form method="post" action="/preorder/request/' + d.id + '" class="js-pre-submit pre-order-form">' +
+                '<div class="form-group">' +
+                '<label>จำนวน</label>' +
+                '<div class="qty-stepper">' +
                 '<button type="button" data-step="-1">&minus;</button>' +
                 '<input type="number" name="quantity" value="1" min="1">' +
                 '<button type="button" data-step="1">+</button></div>' +
-                '<label style="display:block;font-size:.85rem;margin-bottom:4px;">รายละเอียดเพิ่มเติม (ถ้ามี)</label>' +
-                '<textarea name="note" rows="3" maxlength="500" style="width:100%;margin-bottom:12px;" ' +
+                '</div>' +
+                '<div class="form-group">' +
+                '<label>รายละเอียดเพิ่มเติม (ถ้ามี)</label>' +
+                '<textarea name="note" rows="3" maxlength="500" ' +
                 'placeholder="เช่น ขนาด/รุ่นที่ต้องการ วันที่ต้องการรับ หรือข้อมูลติดต่อเพิ่มเติม"></textarea>' +
-                '<button type="submit" class="btn" style="min-width:200px;">&#128197; สั่งจอง</button>' +
+                '</div>' +
+                '<button type="submit" class="btn btn-block">&#128197; สั่งจอง</button>' +
                 '</form>';
         } else {
             el.action.innerHTML = '<a href="' + loginUrl + '" class="btn" style="min-width:200px;">เข้าสู่ระบบเพื่อสั่งจอง</a>';
