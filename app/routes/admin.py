@@ -374,7 +374,7 @@ def order_detail(order_id):
 @admin_required
 def preorders():
     rows = db.query(
-        """SELECT pr.id, pr.product_name, pr.quantity, pr.status, pr.created_at,
+        """SELECT pr.id, pr.product_name, pr.quantity, pr.note, pr.status, pr.created_at,
                   u.name AS customer_name, u.phone
            FROM preorder_requests pr JOIN users u ON pr.user_id = u.id
            ORDER BY pr.created_at DESC

@@ -240,7 +240,7 @@ def orders_report():
 
 def preorders_report():
     rows = db.query(
-        """SELECT pr.id, pr.product_name, pr.quantity, pr.status, pr.created_at,
+        """SELECT pr.id, pr.product_name, pr.quantity, pr.note, pr.status, pr.created_at,
                   u.name AS customer_name, u.phone
            FROM preorder_requests pr JOIN users u ON pr.user_id = u.id
            ORDER BY pr.created_at DESC""",
@@ -252,6 +252,7 @@ def preorders_report():
         "phone": x["phone"],
         "product": x["product_name"],
         "qty": x["quantity"],
+        "note": x["note"] or "",
         "status": x["status"],
         "created": _fmt_dt(x["created_at"]),
     } for x in rows]
@@ -259,8 +260,9 @@ def preorders_report():
         ("เลขที่", "id", 10, "c"),
         ("ลูกค้า", "customer", 22, "l"),
         ("เบอร์โทร", "phone", 16, "l"),
-        ("สินค้าที่จอง", "product", 30, "l"),
+        ("สินค้าที่จอง", "product", 28, "l"),
         ("จำนวน", "qty", 10, "r"),
+        ("รายละเอียดจากลูกค้า", "note", 36, "l"),
         ("สถานะ", "status", 16, "c"),
         ("วันที่จอง", "created", 18, "c"),
     ]

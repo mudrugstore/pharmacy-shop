@@ -42,6 +42,7 @@ def make_request(product_id):
     user = get_current_user()
     qty = request.form.get("quantity", type=int) or 1
     qty = max(1, qty)
+    note = (request.form.get("note") or "").strip()[:500]  # จำกัดความยาวกันข้อมูลยาวเกิน
     is_ajax = request.headers.get("X-Requested-With") == "fetch"
 
     product = db.query(
@@ -56,9 +57,9 @@ def make_request(product_id):
         return redirect(url_for("preorder.index"))
 
     db.query(
-        """INSERT INTO preorder_requests (user_id, product_id, product_name, quantity)
-           VALUES (%s, %s, %s, %s)""",
-        (user["id"], product_id, product["name"], qty),
+        """INSERT INTO preorder_requests (user_id, product_id, product_name, quantity, note)
+           VALUES (%s, %s, %s, %s, %s)""",
+        (user["id"], product_id, product["name"], qty, note),
         commit=True,
     )
     msg = settings.get("preorder_message")
@@ -74,7 +75,7 @@ def my_requests():
     """ประวัติการสั่งจองพรีออเดอร์ของลูกค้า"""
     user = get_current_user()
     rows = db.query(
-        """SELECT id, product_name, quantity, status, created_at, seen_by_user
+        """SELECT id, product_name, quantity, note, status, created_at, seen_by_user
            FROM preorder_requests WHERE user_id = %s ORDER BY created_at DESC LIMIT 100""",
         (user["id"],),
         fetchall=True,

@@ -205,6 +205,7 @@ def init_schema():
         product_id      INTEGER REFERENCES products(id) ON DELETE SET NULL,
         product_name    TEXT NOT NULL,
         quantity        INTEGER NOT NULL DEFAULT 1,
+        note            TEXT DEFAULT '',
         status          TEXT NOT NULL DEFAULT 'รอติดต่อกลับ',
         created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -240,6 +241,8 @@ def init_schema():
     ALTER TABLE categories ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
     ALTER TABLE banners ADD COLUMN IF NOT EXISTS display_page TEXT NOT NULL DEFAULT 'both';
     ALTER TABLE products ADD COLUMN IF NOT EXISTS badge_text TEXT DEFAULT '';
+    -- รายละเอียดเพิ่มเติมจากลูกค้าตอนสั่งพรีออเดอร์
+    ALTER TABLE preorder_requests ADD COLUMN IF NOT EXISTS note TEXT DEFAULT '';
     -- ติดตามว่าลูกค้าเห็นการอัปเดตสถานะล่าสุดหรือยัง (สำหรับ badge แจ้งเตือน)
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS seen_by_user BOOLEAN NOT NULL DEFAULT TRUE;
     ALTER TABLE preorder_requests ADD COLUMN IF NOT EXISTS seen_by_user BOOLEAN NOT NULL DEFAULT TRUE;
