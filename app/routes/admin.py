@@ -492,3 +492,24 @@ def delete_banner(banner_id):
     flash("ลบแบนเนอร์แล้ว", "info")
     return redirect(url_for("admin.banners"))
 
+
+# ---------- ส่งออกรายงาน Excel ----------
+@bp.route("/export/<report>")
+@admin_required
+def export_report(report):
+    """
+    ส่งออกข้อมูลเป็นไฟล์ Excel (.xlsx) แบบละเอียด
+    report: products | categories | orders | preorders | users
+    """
+    from flask import abort, Response
+    from app import reports
+
+    fn = reports.REPORTS.get(report)
+    if fn is None:
+        abort(404)
+    content, filename = fn()
+    return Response(
+        content,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="%s"' % filename},
+    )

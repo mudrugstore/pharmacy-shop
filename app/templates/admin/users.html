@@ -4,6 +4,10 @@
 <h1 class="page-title">จัดการผู้ใช้</h1>
 {% include "admin/_nav.html" %}
 
+<div class="row-actions" style="margin-bottom:16px;">
+    {% set export_report = 'users' %}{% include "admin/_export_btn.html" %}
+</div>
+
 <div class="notice">
     กรณีผู้ใช้ลืมรหัสผ่าน กด "รีเซ็ตรหัส" เพื่อปลดล็อก
     จากนั้นผู้ใช้จะต้องตั้งรหัสผ่านใหม่เองเมื่อเข้าสู่ระบบครั้งถัดไป

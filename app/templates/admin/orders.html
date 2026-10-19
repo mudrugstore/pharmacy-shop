@@ -4,7 +4,10 @@
 <h1 class="page-title">คำสั่งซื้อทั้งหมด</h1>
 {% include "admin/_nav.html" %}
 
-{% if limited %}<p class="muted" style="margin-bottom:12px;font-size:.85rem;">แสดง 100 รายการล่าสุด (ใช้ช่องค้นหาด้านบนเพื่อกรองในรายการที่แสดง)</p>{% endif %}
+<div class="row-actions" style="margin-bottom:12px;">
+    {% set export_report = 'orders' %}{% include "admin/_export_btn.html" %}
+</div>
+{% if limited %}<p class="muted" style="margin-bottom:12px;font-size:.85rem;">แสดง 100 รายการล่าสุด (ส่งออก Excel จะได้ข้อมูลครบทุกรายการ พร้อมรายการสินค้าในแต่ละออเดอร์)</p>{% endif %}
 {% if orders %}
 <div class="table-wrap responsive-cards">
     <table>

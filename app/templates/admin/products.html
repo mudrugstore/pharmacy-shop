@@ -7,6 +7,7 @@
 <div class="row-actions" style="margin-bottom:16px; gap:10px;">
     <a href="{{ url_for('admin.new_product') }}" class="btn">+ เพิ่มสินค้าใหม่</a>
     <button type="button" class="btn btn-outline" id="toggleEdit">แก้ไขหลายรายการ</button>
+    {% set export_report = 'products' %}{% include "admin/_export_btn.html" %}
 </div>
 
 {% if products %}

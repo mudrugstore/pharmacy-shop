@@ -4,6 +4,10 @@
 <h1 class="page-title">จัดการหมวดหมู่</h1>
 {% include "admin/_nav.html" %}
 
+<div class="row-actions" style="margin-bottom:16px;">
+    {% set export_report = 'categories' %}{% include "admin/_export_btn.html" %}
+</div>
+
 <div class="form-box wide" style="margin:0 0 20px;">
     <h2 class="section-title" style="margin-top:0;">เพิ่มหมวดหมู่ใหม่</h2>
     <form method="post" enctype="multipart/form-data">

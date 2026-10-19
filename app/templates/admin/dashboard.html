@@ -23,4 +23,14 @@
         <div class="stat-num">{{ stats.users }}</div><div class="stat-label">ผู้ใช้</div>
     </a>
 </div>
+
+<div class="section-title">ส่งออกรายงาน Excel</div>
+<p class="muted" style="margin:-6px 0 12px;font-size:.86rem;">ดาวน์โหลดข้อมูลแบบละเอียดครบทุกรายการ (ไฟล์ .xlsx เปิดด้วย Excel / Google Sheets ได้)</p>
+<div class="row-actions" style="gap:10px;">
+    <a href="{{ url_for('admin.export_report', report='products') }}" class="btn-small btn-export">สินค้า</a>
+    <a href="{{ url_for('admin.export_report', report='categories') }}" class="btn-small btn-export">หมวดหมู่</a>
+    <a href="{{ url_for('admin.export_report', report='orders') }}" class="btn-small btn-export">คำสั่งซื้อ</a>
+    <a href="{{ url_for('admin.export_report', report='preorders') }}" class="btn-small btn-export">พรีออเดอร์</a>
+    <a href="{{ url_for('admin.export_report', report='users') }}" class="btn-small btn-export">ผู้ใช้</a>
+</div>
 {% endblock %}

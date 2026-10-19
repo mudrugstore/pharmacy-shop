@@ -4,7 +4,10 @@
 <h1 class="page-title">รายการพรีออเดอร์</h1>
 {% include "admin/_nav.html" %}
 
-{% if limited %}<p class="muted" style="margin-bottom:12px;font-size:.85rem;">แสดง 100 รายการล่าสุด</p>{% endif %}
+<div class="row-actions" style="margin-bottom:12px;">
+    {% set export_report = 'preorders' %}{% include "admin/_export_btn.html" %}
+</div>
+{% if limited %}<p class="muted" style="margin-bottom:12px;font-size:.85rem;">แสดง 100 รายการล่าสุด (ส่งออก Excel จะได้ข้อมูลครบทุกรายการ)</p>{% endif %}
 {% if preorders %}
 <div class="table-wrap responsive-cards">
     <table>

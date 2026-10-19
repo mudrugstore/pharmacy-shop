@@ -135,6 +135,9 @@ body > header {
 .btn-outline:hover { background: var(--primary-light); color: var(--primary); }
 .btn-danger { background: #d32f2f; }
 .btn-danger:hover { background: #b71c1c; }
+/* ปุ่มส่งออก Excel (เขียวแบบ Excel) */
+.btn-export { background: #1d7044; color: #fff; }
+.btn-export:hover { background: #155432; color: #fff; }
 .btn-secondary { background: #fff; color: var(--muted); border: 1px solid var(--border); }
 .btn-secondary:hover { background: #f0f0f0; color: var(--text); }
 .btn-block { display: block; width: 100%; }
